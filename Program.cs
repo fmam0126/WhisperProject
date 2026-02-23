@@ -19,9 +19,10 @@ class Program
         sourceFiles = FolderParser.FindSourceFiles(readResult);
         foreach (var item in sourceFiles)
         {
-            if (Path.GetExtension(item) != "mp3")
+            Console.WriteLine(Path.GetExtension(item));
+            if (Path.GetExtension(item) != ".mp3")
             {
-                fileConvert.ConvertToMp3(item);
+                //fileConvert.ConvertToMp3(item);
             }
         }
         
