@@ -5,7 +5,7 @@ class Program
 {
     static void Main(string[] args)
     {
-        List<string> files;
+        List<string> sourceFiles;
         
         Console.WriteLine("Input a path to a folder:");
         string? readResult = Console.ReadLine();
@@ -13,10 +13,11 @@ class Program
         {
             throw new Exception("Filepath cannot be null");
         }
+        
         FileConvert fileConvert = new FileConvert(readResult);
         
-        files = FolderParser.FindSourceFiles(readResult);
-        foreach (var item in files)
+        sourceFiles = FolderParser.FindSourceFiles(readResult);
+        foreach (var item in sourceFiles)
         {
             if (Path.GetExtension(item) != "mp3")
             {

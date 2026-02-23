@@ -1,5 +1,5 @@
-- make a system that parses files from a watch folder and checks if it already has subtitles. make it filter out file types that isnt mp3 mp4 mkv
-- convert the files to a smaller audio format. convert mp4/mkv to mp3. and skip mp3 files use ffmpeg
+- make a system that parses files from a watch folder and checks if it already has subtitles. make it filter out file types that isnt mp3 mp4 mkv ✅
+- convert the files to a smaller audio format. convert mp4/mkv to mp3. and skip mp3 files use ffmpeg ✅ - Ish. method to create the mp3 files has been made but no filter has been made
 - save that converted file temporarily
 - send that audio file to be transcribed by whisper compatible api
 - recieve the transcription. 
