@@ -1,0 +1,7 @@
+- make a system that parses files from a watch folder and checks if it already has subtitles. make it filter out file types that isnt mp3 mp4 mkv
+- convert the files to a smaller audio format. convert mp4/mkv to mp3. and skip mp3 files use ffmpeg
+- save that converted file temporarily
+- send that audio file to be transcribed by whisper compatible api
+- recieve the transcription. 
+- send the transcription to a llm to translate to english.
+- recieve and save the finished translated subtitle file next to the video file as a srt in FILENAME.LANGUAGECODE.SRT
