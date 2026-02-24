@@ -16,7 +16,7 @@ class FileConvert
     /// </summary>
     /// <param name="inputPath">file to be converted</param>
     /// <exception cref="Exception">throw exception if output file already exists</exception>
-    public void ConvertToMp3(string inputPath)
+    public async Task<string> ConvertToMp3(string inputPath)
     {
         // 1. Ensure the directory exists
         if (!Directory.Exists(WorkingPath))
@@ -31,9 +31,38 @@ class FileConvert
         string outputPath = Path.Combine(WorkingPath, $"{fileNameOnly}.mp3");
         if (File.Exists(outputPath))
         {
-            throw new Exception("Output file already Exists");
+            return outputPath;
+            // throw new Exception("Output file already Exists");
         }
         // 4. Perform the extraction
         FFMpeg.ExtractAudio(inputPath, outputPath);
+        return outputPath;
+    }
+        public async Task<string> ConvertToWav(string inputPath)
+    {
+        // 1. Ensure the directory exists
+        if (!Directory.Exists(WorkingPath))
+        {
+            Directory.CreateDirectory(WorkingPath);
+        }
+
+        // 2. Get the filename without the extension (e.g., "video" from "video.mp4")
+        string fileNameOnly = Path.GetFileNameWithoutExtension(inputPath);
+        
+        // 3. Combine to create the full output path (e.g., ".../temp_audio/video.wav")
+        string outputPath = Path.Combine(WorkingPath, $"{fileNameOnly}.wav");
+        if (File.Exists(outputPath))
+        {
+            return outputPath;
+            // throw new Exception("Output file already Exists");
+        }
+        // 4. Perform the extraction
+        await FFMpegArguments
+        .FromFileInput(inputPath)
+        .OutputToFile(outputPath, overwrite: true, options => options
+            .WithAudioSamplingRate(44100)
+            .ForceFormat("wav"))
+            .ProcessAsynchronously();
+        return outputPath;
     }
 }
