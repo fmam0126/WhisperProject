@@ -4,16 +4,21 @@ using System.Threading.Tasks;
 using Whisper.net;
 using Whisper.net.Ggml;
 using Whisper.net.Logger;
-
+using System.Globalization;
 public class WhisperClient
 {
+    static string FormatSrtTime(TimeSpan time)
+    {
+        return time.ToString(@"hh\:mm\:ss\,fff", CultureInfo.InvariantCulture);
+    }
+
     // This examples shows how to use Whisper.net to create a transcription from an audio file with 16Khz sample rate.
     // It uses both Cuda (NVidia GPU) or CPU, and loads the first one that is available.
     public static async Task TranscribeAsync(string inputFileName)
     {
         // We declare three variables which we will use later, ggmlType, modelFileName and wavFileName
         var ggmlType = GgmlType.LargeV3Turbo;
-        var modelFileName = "ggml-largev3.bin";
+        var modelFileName = "ggml-largev3-turbo.bin";
         var wavFileName = inputFileName;
 
         using var whisperLogger = LogProvider.AddConsoleLogging(WhisperLogLevel.Debug);
@@ -33,12 +38,22 @@ public class WhisperClient
             .Build();
             
 
+        string detectedLanguage = "gamer";
         using var fileStream = File.OpenRead(wavFileName);
+        using var writer = new StreamWriter($"{Path.GetDirectoryName(wavFileName)}\\{Path.GetFileNameWithoutExtension(wavFileName)}.{detectedLanguage}.srt");
+        int index = 1;
 
         // This section processes the audio file and prints the results (start time, end time and text) to the console.
         await foreach (var result in processor.ProcessAsync(fileStream))
         {
             Console.WriteLine($"{result.Start}->{result.End}: {result.Text}");
+            detectedLanguage = result.Language;
+            await writer.WriteLineAsync(index.ToString());
+            await writer.WriteLineAsync($"{FormatSrtTime(result.Start)} --> {FormatSrtTime(result.End)}");
+            await writer.WriteLineAsync(result.Text.Trim());
+            await writer.WriteLineAsync();
+            
+            index++;
         }
     }
 
@@ -49,4 +64,6 @@ public class WhisperClient
         using var fileWriter = File.OpenWrite(fileName);
         await modelStream.CopyToAsync(fileWriter);
     }
+
+
 }
