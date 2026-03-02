@@ -60,7 +60,7 @@ class FileConvert
         await FFMpegArguments
         .FromFileInput(inputPath)
         .OutputToFile(outputPath, overwrite: true, options => options
-            .WithAudioSamplingRate(44100)
+            .WithAudioSamplingRate(16000)
             .ForceFormat("wav"))
             .ProcessAsynchronously();
         return outputPath;

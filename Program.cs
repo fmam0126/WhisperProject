@@ -11,7 +11,7 @@ class Program
         WhisperClient whisperClient = new WhisperClient();
         
         Console.WriteLine("Input a path to a folder:");
-        string? readResult = @"C:\Users\Marcu\Documents\kodehode\TEst"; // Console.ReadLine();
+        string? readResult = Console.ReadLine();
         if (readResult == null)
         {
             throw new Exception("Filepath cannot be null");
@@ -26,7 +26,7 @@ class Program
             Console.WriteLine(Path.GetExtension(item));
             if (Path.GetExtension(item) != ".wav")
             {
-                outputPath = await fileConvert.ConvertToMp3(item);
+                outputPath = await fileConvert.ConvertToWav(item);
             }
             else
             {
@@ -36,8 +36,9 @@ class Program
             try
             {
                 
-            string? transcription = await whisperClient.TranscribeAsync("whisper-v3", "DUMMY", outputPath);
-            Console.WriteLine(transcription);
+            // string? transcription = await whisperClient.TranscribeAsync("whisper-v3", "DUMMY", outputPath);
+            await WhisperClient.TranscribeAsync(outputPath);
+            
             }
             catch (Exception ex)
             {
