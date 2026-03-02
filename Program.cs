@@ -11,7 +11,7 @@ class Program
         WhisperClient whisperClient = new WhisperClient();
         
         Console.WriteLine("Input a path to a folder:");
-        string? readResult = @"C:\Users\Marcu\Documents\kodehode\TEst"; // Console.ReadLine();
+        string? readResult = Console.ReadLine();
         if (readResult == null)
         {
             throw new Exception("Filepath cannot be null");
