@@ -5,9 +5,10 @@ using Whisper.net;
 using Whisper.net.Ggml;
 using Whisper.net.Logger;
 using System.Globalization;
-public class WhisperClient
+public static class WhisperClient
 {
-    static string FormatSrtTime(TimeSpan time)
+    public static string IdentifiedLanguage {get; private set;} = "gamer";
+    public static string FormatSrtTime(TimeSpan time)
     {
         return time.ToString(@"hh\:mm\:ss\,fff", CultureInfo.InvariantCulture);
     }
@@ -38,16 +39,16 @@ public class WhisperClient
             .Build();
             
 
-        string detectedLanguage = "gamer";
+        
         using var fileStream = File.OpenRead(wavFileName);
-        using var writer = new StreamWriter($"{Path.GetDirectoryName(wavFileName)}\\{Path.GetFileNameWithoutExtension(wavFileName)}.{detectedLanguage}.srt");
+        using var writer = new StreamWriter($"{Path.GetDirectoryName(wavFileName)}\\{Path.GetFileNameWithoutExtension(wavFileName)}.srt");
         int index = 1;
 
         // This section processes the audio file and prints the results (start time, end time and text) to the console.
         await foreach (var result in processor.ProcessAsync(fileStream))
         {
             Console.WriteLine($"{result.Start}->{result.End}: {result.Text}");
-            detectedLanguage = result.Language;
+            IdentifiedLanguage = result.Language;
             await writer.WriteLineAsync(index.ToString());
             await writer.WriteLineAsync($"{FormatSrtTime(result.Start)} --> {FormatSrtTime(result.End)}");
             await writer.WriteLineAsync(result.Text.Trim());

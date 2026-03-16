@@ -8,7 +8,6 @@ class Program
     static async Task Main(string[] args)
     {
         List<string> sourceFiles;
-        WhisperClient whisperClient = new WhisperClient();
         
         Console.WriteLine("Input a path to a folder:");
         string? readResult = Console.ReadLine();
@@ -44,6 +43,24 @@ class Program
             {
                 Console.WriteLine($"Error: {ex.Message}");
             }
+
+            Console.WriteLine($"Finished processing {Path.GetFileName(outputPath)}");
+            Console.WriteLine("--------------------------------------------------");
+            Console.WriteLine("Tranlating subtitles...");
+            SubtitleTranslator subtitleTranslator = new SubtitleTranslator
+            {
+                Url = "http://127.0.0.1",
+                Port = 8000,
+                TargetLanguage = "en",
+                ApiKey = "DUMMY",
+                GptPath = "/api/v1/chat/completions",
+                Model = "Qwen3-1.7b-FLM"
+                
+                
+            };
+            string srtFileName = $"{Path.GetDirectoryName(outputPath)}\\{Path.GetFileNameWithoutExtension(outputPath)}.srt";
+            await subtitleTranslator.TranslateSrtAsync(srtFileName);
+            Console.WriteLine($"Finished Translating {Path.GetFileName(item)}");
             // File.Delete(outputPath);
 
         }

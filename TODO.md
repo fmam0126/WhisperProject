@@ -6,7 +6,14 @@
 - send that audio file to be transcribed by whisper compatible api  - implemented whisper running on the host. decide if its this i want.
 
 
-- Format the output from whisper.net as a .srt with the correct languagecode - fix languagecode
+- Format the output from whisper.net as a .srt with the correct languagecode - fix languagecode - should be implemented as the language the subtitles are translated to.
 
 - send the transcription to a llm to translate to english.
+
+
 - recieve and save the finished translated subtitle file next to the video file as a srt in FILENAME.LANGUAGECODE.SRT
+
+
+16.03 
+- use semaphore to add concurrency to the translation 
+- Make a Srt Parser to Remove a Dependency
