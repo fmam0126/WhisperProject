@@ -3,6 +3,7 @@ using System.Text.Json;
 using SubtitlesParserV2;
 using SubtitlesParserV2.Models;
 using System.Collections.Concurrent;
+using FFMpegCore.Arguments;
 
 public class SubtitleTranslator
 {
@@ -88,7 +89,72 @@ public class SubtitleTranslator
             }
 
         }
+    }
+    /// <summary>
+    /// this async task translates the srt file to targeted language and then writes it to a srt file one directory up from the srt file
+    /// </summary>
+    /// <param name="srtFileName">srt file to translate</param>
+    /// <returns></returns>
+    public async Task TranslateSrtParalellTask(string srtFileName)
+    {
+        using (FileStream fileStream = File.OpenRead(srtFileName))
+        {
+            // Try to parse with one specific parser using default configuration
+            SubtitleParserResultModel? result = SubtitleParser.ParseStream(fileStream, Encoding.UTF8, SubtitleFormatType.SubRip);
+            List<string> lines = new List<string>();
+            List<int> startTimes = new List<int>();
+            List<int> endTimes = new List<int>();
 
+            if (result?.Subtitles != null)
+            {
+
+                int Index = 0;
+                int srtIndex = 1;
+                string? translatedLine = string.Empty;
+                lines = result.Subtitles.SelectMany(d => d.Lines).ToList();
+                startTimes = result.Subtitles.Select(d => d.StartTime).ToList();
+                endTimes = result.Subtitles.Select(d => d.EndTime).ToList();
+                using var writer = new StreamWriter($"{Path.GetDirectoryName(Path.GetDirectoryName(srtFileName))}\\{Path.GetFileNameWithoutExtension(srtFileName)}.{TargetLanguage.ToUpper()}.srt");
+
+
+                // var translatedLines = new ConcurrentBag<(int Index, string Data)>();
+                var translatedLines = new List<string>();
+
+                var options = new ParallelOptions { MaxDegreeOfParallelism = 4 }; // limit concurrency to 4 
+                await Parallel.ForEachAsync(lines, options, async (line, CancellationToken) =>
+                {
+                    string processedText = await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), UrlBuilder(Url));
+                    translatedLines.Add(processedText);
+                    Console.WriteLine(processedText.Trim().ReplaceLineEndings(string.Empty));
+                    await Task.Delay(50);
+                });
+
+
+                foreach (var line in translatedLines)
+                {
+                    await writer.WriteLineAsync(srtIndex.ToString());
+                    await writer.WriteLineAsync($"{WhisperClient.FormatSrtTime(TimeSpan.FromMilliseconds(startTimes[Index]))} --> {WhisperClient.FormatSrtTime(TimeSpan.FromMilliseconds(endTimes[Index]))}");
+                    await writer.WriteLineAsync(line.Trim().ReplaceLineEndings(string.Empty));
+                    await writer.WriteLineAsync("");
+                    srtIndex++;
+                    Index++;
+                }
+
+
+                // foreach (var line in lines)
+                // {
+                //     await writer.WriteLineAsync(srtIndex.ToString());
+                //     await writer.WriteLineAsync($"{WhisperClient.FormatSrtTime(TimeSpan.FromMilliseconds(startTimes[Index]))} --> {WhisperClient.FormatSrtTime(TimeSpan.FromMilliseconds(endTimes[Index]))}");
+                //     translatedLine = await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), UrlBuilder(Url));
+                //     await writer.WriteLineAsync(translatedLine.Trim().ReplaceLineEndings(string.Empty));
+                //     Console.WriteLine(translatedLine.Trim().ReplaceLineEndings(string.Empty));
+                //     await writer.WriteLineAsync("");
+                //     srtIndex++;
+                //     Index++;
+                // }
+            }
+
+        }
 
 
 
