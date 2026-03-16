@@ -15,5 +15,5 @@
 
 
 16.03 
-- use semaphore to add concurrency to the translation 
+- use semaphore to add concurrency to the translation  
 - Make a Srt Parser to Remove a Dependency
