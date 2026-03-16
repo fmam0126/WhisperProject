@@ -50,11 +50,11 @@ class Program
             SubtitleTranslator subtitleTranslator = new SubtitleTranslator
             {
                 Url = "http://127.0.0.1",
-                Port = 8000,
+                Port = 1234,
                 TargetLanguage = "en",
                 ApiKey = "DUMMY",
-                GptPath = "/api/v1/chat/completions",
-                Model = "Qwen3-1.7b-FLM"
+                GptPath = "/v1/chat/completions",
+                Model = "google/gemma-3-4b"
                 
                 
             };

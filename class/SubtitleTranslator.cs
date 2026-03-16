@@ -1,10 +1,7 @@
 using System.Text;
 using System.Text.Json;
-using System.IO;
 using SubtitlesParserV2;
 using SubtitlesParserV2.Models;
-using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography.X509Certificates;
 using System.Collections.Concurrent;
 
 public class SubtitleTranslator
@@ -56,6 +53,7 @@ public class SubtitleTranslator
                         string processedText = await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), UrlBuilder(Url));
                         translatedLines.Add((index, processedText));
                         Console.WriteLine(processedText.Trim().ReplaceLineEndings(string.Empty));
+                        await Task.Delay(50);
                     }
                     finally
                     {
@@ -65,7 +63,7 @@ public class SubtitleTranslator
 
                 await Task.WhenAll(translationTask);
 
-                foreach (var line in translatedLines)
+                foreach (var line in translatedLines.OrderBy(r => r.Index))
                 {
                     await writer.WriteLineAsync(srtIndex.ToString());
                     await writer.WriteLineAsync($"{WhisperClient.FormatSrtTime(TimeSpan.FromMilliseconds(startTimes[Index]))} --> {WhisperClient.FormatSrtTime(TimeSpan.FromMilliseconds(endTimes[Index]))}");
@@ -110,9 +108,21 @@ public class SubtitleTranslator
         // }
     }
 
+    private string RemoveReasoning(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return text;
 
-
-
+        try
+        {
+            return System.Text.RegularExpressions.Regex.Replace(text, @"<think>.*?</think>", "", System.Text.RegularExpressions.RegexOptions.Singleline | System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error removing think tags: {ex.Message}");
+            return text;
+        }
+    }
     private string UrlBuilder(string baseurl)
     {
         if (baseurl == null)
@@ -169,24 +179,24 @@ public class SubtitleTranslator
                 if (first.TryGetProperty("message", out var message) && message.TryGetProperty("content", out var contentElement))
                 {
                     var result = contentElement.GetString();
-                    return result;
+                    return RemoveReasoning(result ?? string.Empty);
                 }
                 if (first.TryGetProperty("text", out var textElement))
                 {
                     var result = textElement.GetString();
-                    return result;
+                    return RemoveReasoning(result ?? string.Empty);
                 }
             }
 
             if (rootElement.TryGetProperty("text", out var text))
             {
                 var result = text.GetString();
-                return result;
+                return RemoveReasoning(result ?? string.Empty);
             }
             if (rootElement.TryGetProperty("result", out var resultElement))
             {
                 var result = resultElement.GetString();
-                return result;
+                return RemoveReasoning(result ?? string.Empty);
             }
             Console.WriteLine($"WARNING: Could not parse Response. response length {responseText.Length}");
             return responseText;

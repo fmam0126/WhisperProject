@@ -15,5 +15,8 @@
 
 
 16.03 
-- use semaphore to add concurrency to the translation  
+- use semaphore to add concurrency to the translation  - Test if Things are In correct order. Looks okay right now
+
 - Make a Srt Parser to Remove a Dependency
+
+- add error handling
