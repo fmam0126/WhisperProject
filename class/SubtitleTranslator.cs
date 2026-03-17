@@ -123,7 +123,17 @@ public class SubtitleTranslator
                 var options = new ParallelOptions { MaxDegreeOfParallelism = 4 }; // limit concurrency to 4 
                 await Parallel.ForEachAsync(lines, options, async (line, CancellationToken) =>
                 {
-                    string processedText = await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), UrlBuilder(Url));
+                    string processedText;
+                    try
+                    {
+                    processedText = await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), UrlBuilder(Url));
+                        
+                    }
+                    catch (System.Exception)
+                    {
+                        
+                        throw;
+                    }
                     translatedLines.Add(processedText);
                     Console.WriteLine(processedText.Trim().ReplaceLineEndings(string.Empty));
                     await Task.Delay(50);
@@ -230,7 +240,11 @@ public class SubtitleTranslator
         var json = JsonSerializer.Serialize(payload);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
         using var response = await httpClient.PostAsync(url, content);
-
+        if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
+        {
+            Console.WriteLine($"{response.Headers} {response.Content} {response}");
+            
+        }
         response.EnsureSuccessStatusCode();
 
         var responseText = await response.Content.ReadAsStringAsync();

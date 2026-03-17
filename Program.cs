@@ -8,7 +8,7 @@ class Program
     static async Task Main(string[] args)
     {
         List<string> sourceFiles;
-        
+        // var input = args[1];
         Console.WriteLine("Input a path to a folder:");
         string? readResult = Console.ReadLine();
         if (readResult == null)
