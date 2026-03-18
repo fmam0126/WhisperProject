@@ -18,8 +18,8 @@ public static class WhisperClient
     public static async Task TranscribeAsync(string inputFileName)
     {
         // We declare three variables which we will use later, ggmlType, modelFileName and wavFileName
-        var ggmlType = GgmlType.LargeV3Turbo;
-        var modelFileName = "ggml-largev3-turbo.bin";
+        var ggmlType = GgmlType.LargeV2;
+        var modelFileName = "ggml-nb-large.bin";
         var wavFileName = inputFileName;
 
         using var whisperLogger = LogProvider.AddConsoleLogging(WhisperLogLevel.Debug);

@@ -3,11 +3,11 @@ using System.Text.Json;
 using SubtitlesParserV2;
 using SubtitlesParserV2.Models;
 using System.Collections.Concurrent;
-using FFMpegCore.Arguments;
+
 
 public class SubtitleTranslator
 {
-
+    
     public string Url { get; set; } = string.Empty;
     public int Port { get; set; }
     public string GptPath { get; set; } = string.Empty;
@@ -35,6 +35,8 @@ public class SubtitleTranslator
 
             if (result?.Subtitles != null)
             {
+                
+                
 
                 int Index = 0;
                 int srtIndex = 1;
@@ -56,6 +58,7 @@ public class SubtitleTranslator
                         Console.WriteLine(processedText.Trim().ReplaceLineEndings(string.Empty));
                         await Task.Delay(50);
                     }
+
                     finally
                     {
                         semaphore.Release();

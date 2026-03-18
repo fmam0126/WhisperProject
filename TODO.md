@@ -21,6 +21,6 @@
 
 - Make a Srt Parser to Remove a Dependency
 
-- add error handling
+- add error handling - polly library
 
 - comment code better 
