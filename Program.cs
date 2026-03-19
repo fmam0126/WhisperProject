@@ -20,21 +20,26 @@ class Program
         IConfigurationRoot config;
         try{
         config = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.json", optional: false)
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("./appsettings.json", optional: false)
             .Build();
         }catch (Exception ex)
         {
             Console.WriteLine($"Error loading configuration: {ex.Message}");
             return;
         }
-
-
-            Settings? settings = config.GetSection("Settings").Get<Settings>();
+        Settings? settings;
+        try{
+            settings = config.GetSection("Settings").Get<Settings>();
             if (settings == null)
             {
                 throw new Exception("Settings section is missing in appsettings.json");
             }
-
+        }catch (Exception ex)
+        {
+            Console.WriteLine($"Error parsing settings: {ex.Message}");
+            return;
+        }
 
 
 
