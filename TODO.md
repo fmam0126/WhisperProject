@@ -19,8 +19,10 @@
 
 - look into Parallel.ForEachAsync - newer implementation of what semaphore does??
 
-- Make a Srt Parser to Remove a Dependency
+- Make a Srt Parser to Remove a Dependency - maybe
 
 - add error handling - polly library
 
 - comment code better 
+
+- add usage of args to remove readlines - added appsettings.json 

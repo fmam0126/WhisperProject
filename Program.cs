@@ -1,4 +1,4 @@
-﻿
+﻿using Microsoft.Extensions.Configuration;
 using System.Security;
 
 namespace WhisperProject;
@@ -7,18 +7,42 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        List<string> sourceFiles;
-        // var input = args[1];
-        Console.WriteLine("Input a path to a folder:");
-        string? readResult = Console.ReadLine();
-        if (readResult == null)
+        // var input = args[0];
+        // Console.WriteLine(input);
+        // Console.WriteLine("Input a path to a folder:");
+        // string? readResult = Console.ReadLine();
+        // if (readResult == null)
+        // {
+        //     throw new Exception("Filepath cannot be null");
+        // }
+        
+        // Build a Config object to read from appsettings.json and environment variables
+        IConfigurationRoot config;
+        try{
+        config = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json", optional: false)
+            .Build();
+        }catch (Exception ex)
         {
-            throw new Exception("Filepath cannot be null");
+            Console.WriteLine($"Error loading configuration: {ex.Message}");
+            return;
         }
+
+
+            Settings? settings = config.GetSection("Settings").Get<Settings>();
+            if (settings == null)
+            {
+                throw new Exception("Settings section is missing in appsettings.json");
+            }
+
+
+
+
+
+        List<string> sourceFiles;
+        FileConvert fileConvert = new FileConvert(settings.InputPath);
         
-        FileConvert fileConvert = new FileConvert(readResult);
-        
-        sourceFiles = FolderParser.FindSourceFiles(readResult);
+        sourceFiles = FolderParser.FindSourceFiles(settings.InputPath);
         foreach (var item in sourceFiles)
         {
             string outputPath;
@@ -49,19 +73,17 @@ class Program
             Console.WriteLine("Tranlating subtitles...");
             SubtitleTranslator subtitleTranslator = new SubtitleTranslator
             {
-                Url = "http://127.0.0.1",
-                Port = 1234,
-                TargetLanguage = "en",
-                ApiKey = "DUMMY",
-                GptPath = "/v1/chat/completions",
-                Model = "google/gemma-3-4b"
-                
-                
+                Url = settings.Url,
+                Port = settings.Port,
+                TargetLanguage = settings.TargetLanguage,
+                ApiKey = settings.ApiKey,
+                GptPath = settings.GptPath,
+                Model = settings.GptModel
             };
             string srtFileName = $"{Path.GetDirectoryName(outputPath)}\\{Path.GetFileNameWithoutExtension(outputPath)}.srt";
             await subtitleTranslator.TranslateSrtAsync(srtFileName);
-            Console.WriteLine($"Finished Translating {Path.GetFileName(item)}");
-            // File.Delete(outputPath);
+            Console.WriteLine($"Finished Translating {Path.GetFileName(outputPath)}");
+            File.Delete(outputPath);
 
         }
         

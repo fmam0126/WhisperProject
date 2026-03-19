@@ -3,11 +3,12 @@ using System.Text.Json;
 using SubtitlesParserV2;
 using SubtitlesParserV2.Models;
 using System.Collections.Concurrent;
-
+using Polly;
+using Polly.Retry;
 
 public class SubtitleTranslator
 {
-    
+
     public string Url { get; set; } = string.Empty;
     public int Port { get; set; }
     public string GptPath { get; set; } = string.Empty;
@@ -35,8 +36,21 @@ public class SubtitleTranslator
 
             if (result?.Subtitles != null)
             {
-                
-                
+                // Create an instance of builder that exposes various extensions for adding resilience strategies
+                ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
+                    .AddRetry(new RetryStrategyOptions
+                    {
+                        MaxRetryAttempts = 3,
+                        OnRetry = static args =>
+                        {
+                            Console.WriteLine($"Retry {args.AttemptNumber} triggered due to {args.Outcome.Exception?.Message}");
+                            return default;
+                        }
+                        
+                    }) // Add retry 
+                    .AddTimeout(TimeSpan.FromSeconds(10)) // Add 10 seconds timeout
+                    .Build(); // Builds the resilience pipeline
+
 
                 int Index = 0;
                 int srtIndex = 1;
@@ -53,7 +67,7 @@ public class SubtitleTranslator
                     await semaphore.WaitAsync();
                     try
                     {
-                        string processedText = await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), UrlBuilder(Url));
+                        string processedText = await pipeline.ExecuteAsync(async token => { return await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), UrlBuilder(Url)); });
                         translatedLines.Add((index, processedText));
                         Console.WriteLine(processedText.Trim().ReplaceLineEndings(string.Empty));
                         await Task.Delay(50);
@@ -129,12 +143,12 @@ public class SubtitleTranslator
                     string processedText;
                     try
                     {
-                    processedText = await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), UrlBuilder(Url));
-                        
+                        processedText = await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), UrlBuilder(Url));
+
                     }
                     catch (System.Exception)
                     {
-                        
+
                         throw;
                     }
                     translatedLines.Add(processedText);
@@ -246,7 +260,7 @@ public class SubtitleTranslator
         if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
         {
             Console.WriteLine($"{response.Headers} {response.Content} {response}");
-            
+
         }
         response.EnsureSuccessStatusCode();
 
