@@ -7,7 +7,7 @@ using Whisper.net.Logger;
 using System.Globalization;
 public static class WhisperClient
 {
-    public static string IdentifiedLanguage {get; private set;} = "gamer";
+    public static string IdentifiedLanguage { get; private set; } = "gamer";
     public static string FormatSrtTime(TimeSpan time)
     {
         return time.ToString(@"hh\:mm\:ss\,fff", CultureInfo.InvariantCulture);
@@ -38,9 +38,9 @@ public static class WhisperClient
             .WithThreads(Environment.ProcessorCount)
             .WithLanguage("auto")
             .Build();
-            
 
-        
+
+
         using var fileStream = File.OpenRead(wavFileName);
         using var writer = new StreamWriter($"{Path.GetDirectoryName(wavFileName)}\\{Path.GetFileNameWithoutExtension(wavFileName)}.srt");
         int index = 1;
@@ -54,7 +54,7 @@ public static class WhisperClient
             await writer.WriteLineAsync($"{FormatSrtTime(result.Start)} --> {FormatSrtTime(result.End)}");
             await writer.WriteLineAsync(result.Text.Trim());
             await writer.WriteLineAsync();
-            
+
             index++;
         }
     }

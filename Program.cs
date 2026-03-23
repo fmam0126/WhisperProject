@@ -15,27 +15,31 @@ class Program
         // {
         //     throw new Exception("Filepath cannot be null");
         // }
-        
+
         // Build a Config object to read from appsettings.json and environment variables
         IConfigurationRoot config;
-        try{
-        config = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("./appsettings.json", optional: false)
-            .Build();
-        }catch (Exception ex)
+        try
+        {
+            config = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("./appsettings.json", optional: false)
+                .Build();
+        }
+        catch (Exception ex)
         {
             Console.WriteLine($"Error loading configuration: {ex.Message}");
             return;
         }
         Settings? settings;
-        try{
+        try
+        {
             settings = config.GetSection("Settings").Get<Settings>();
             if (settings == null)
             {
                 throw new Exception("Settings section is missing in appsettings.json");
             }
-        }catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             Console.WriteLine($"Error parsing settings: {ex.Message}");
             return;
@@ -46,7 +50,7 @@ class Program
 
         List<string> sourceFiles;
         FileConvert fileConvert = new FileConvert(settings.InputPath);
-        
+
         sourceFiles = FolderParser.FindSourceFiles(settings.InputPath);
         foreach (var item in sourceFiles)
         {
@@ -63,10 +67,10 @@ class Program
             Console.WriteLine($"sending {Path.GetFileName(outputPath)} to Whisper");
             try
             {
-                
-            // string? transcription = await whisperClient.TranscribeAsync("whisper-v3", "DUMMY", outputPath);
-            await WhisperClient.TranscribeAsync(outputPath);
-            Console.WriteLine(Path.GetDirectoryName(outputPath));
+
+                // string? transcription = await whisperClient.TranscribeAsync("whisper-v3", "DUMMY", outputPath);
+                await WhisperClient.TranscribeAsync(outputPath);
+                Console.WriteLine(Path.GetDirectoryName(outputPath));
             }
             catch (Exception ex)
             {
@@ -91,6 +95,6 @@ class Program
             File.Delete(outputPath);
 
         }
-        
+
     }
 }
