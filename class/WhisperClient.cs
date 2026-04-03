@@ -5,6 +5,7 @@ using Whisper.net;
 using Whisper.net.Ggml;
 using Whisper.net.Logger;
 using System.Globalization;
+using System.Diagnostics.SymbolStore;
 public static class WhisperClient
 {
     public static string IdentifiedLanguage {get; private set;} = "gamer";
@@ -15,7 +16,7 @@ public static class WhisperClient
 
     // This examples shows how to use Whisper.net to create a transcription from an audio file with 16Khz sample rate.
     // It uses both Cuda (NVidia GPU) or CPU, and loads the first one that is available.
-    public static async Task TranscribeAsync(string inputFileName, string? modelPath = null)
+    public static async Task TranscribeAsync(string inputFileName, string? modelPath = null, string? language = null)
     {
         // We declare three variables which we will use later, ggmlType, modelFileName and wavFileName
         var ggmlType = GgmlType.LargeV2;
@@ -36,7 +37,7 @@ public static class WhisperClient
         // This section creates the processor object which is used to process the audio file, it uses language `auto` to detect the language of the audio file.
         using var processor = whisperFactory.CreateBuilder()
             .WithThreads(Environment.ProcessorCount)
-            .WithLanguage("auto")
+            .WithLanguage(language ?? "auto")
             .Build();
             
 

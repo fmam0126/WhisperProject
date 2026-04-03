@@ -65,7 +65,7 @@ class Program
             {
                 
             // string? transcription = await whisperClient.TranscribeAsync("whisper-v3", "DUMMY", outputPath);
-            await WhisperClient.TranscribeAsync(outputPath);
+            await WhisperClient.TranscribeAsync(outputPath, language: settings.WhisperLanguage);
             Console.WriteLine(Path.GetDirectoryName(outputPath));
             }
             catch (Exception ex)
