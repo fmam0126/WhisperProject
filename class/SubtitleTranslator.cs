@@ -46,7 +46,7 @@ public class SubtitleTranslator
                             Console.WriteLine($"Retry {args.AttemptNumber} triggered due to {args.Outcome.Exception?.Message}");
                             return default;
                         }
-                        
+
                     }) // Add retry 
                     .AddTimeout(TimeSpan.FromSeconds(10)) // Add 10 seconds timeout
                     .Build(); // Builds the resilience pipeline

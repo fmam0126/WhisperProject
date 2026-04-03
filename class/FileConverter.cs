@@ -7,7 +7,7 @@ class FileConvert
     public string WorkingPath = string.Empty;
     public FileConvert(string workingPath)
     {
-        WorkingPath = workingPath +"\\temp";
+        WorkingPath = workingPath + "\\temp";
     }
 
     // TODO: Decide if the method should take an output path as an input
@@ -26,7 +26,7 @@ class FileConvert
 
         // 2. Get the filename without the extension (e.g., "video" from "video.mp4")
         string fileNameOnly = Path.GetFileNameWithoutExtension(inputPath);
-        
+
         // 3. Combine to create the full output path (e.g., ".../temp_audio/video.mp3")
         string outputPath = Path.Combine(WorkingPath, $"{fileNameOnly}.mp3");
         if (File.Exists(outputPath))
@@ -38,7 +38,7 @@ class FileConvert
         FFMpeg.ExtractAudio(inputPath, outputPath);
         return outputPath;
     }
-        public async Task<string> ConvertToWav(string inputPath)
+    public async Task<string> ConvertToWav(string inputPath)
     {
         // 1. Ensure the directory exists
         if (!Directory.Exists(WorkingPath))
@@ -48,7 +48,7 @@ class FileConvert
 
         // 2. Get the filename without the extension (e.g., "video" from "video.mp4")
         string fileNameOnly = Path.GetFileNameWithoutExtension(inputPath);
-        
+
         // 3. Combine to create the full output path (e.g., ".../temp_audio/video.wav")
         string outputPath = Path.Combine(WorkingPath, $"{fileNameOnly}.wav");
         if (File.Exists(outputPath))
