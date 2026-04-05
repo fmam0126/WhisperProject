@@ -43,20 +43,45 @@ public static class WhisperClient
 
 
         using var fileStream = File.OpenRead(wavFileName);
-        using var writer = new StreamWriter($"{Path.GetDirectoryName(wavFileName)}\\{Path.GetFileNameWithoutExtension(wavFileName)}.srt");
-        int index = 1;
+        // using var writer = new StreamWriter($"{Path.GetDirectoryName(wavFileName)}\\{Path.GetFileNameWithoutExtension(wavFileName)}.srt");
+        // int index = 1;
 
+        var results = new List<object>();
         // This section processes the audio file and prints the results (start time, end time and text) to the console.
+        // await foreach (var result in processor.ProcessAsync(fileStream))
+        // {
+        //     results.Add(result);
+        //     Console.WriteLine($"{result.Start}->{result.End}: {result.Text}");
+        //     IdentifiedLanguage = result.Language;
+        //     await writer.WriteLineAsync(index.ToString());
+        //     await writer.WriteLineAsync($"{FormatSrtTime(result.Start)} --> {FormatSrtTime(result.End)}");
+        //     await writer.WriteLineAsync(result.Text.Trim());
+        //     await writer.WriteLineAsync();
+
+        //     index++;
+        // }
+
+
+        var segments = new List<SegmentData>();
+
         await foreach (var result in processor.ProcessAsync(fileStream))
         {
-            Console.WriteLine($"{result.Start}->{result.End}: {result.Text}");
-            IdentifiedLanguage = result.Language;
-            await writer.WriteLineAsync(index.ToString());
-            await writer.WriteLineAsync($"{FormatSrtTime(result.Start)} --> {FormatSrtTime(result.End)}");
-            await writer.WriteLineAsync(result.Text.Trim());
-            await writer.WriteLineAsync();
+            segments.Add(result);
+            // Optional: Minimal logging so you know it's working
+            Console.WriteLine($"Transcribing: {result.Start:mm\\:ss}");
+        }
 
-            index++;
+        // 3. Write the SRT file all at once at the end
+        var srtPath = Path.ChangeExtension(inputFileName, ".srt");
+        using var writer = new StreamWriter(srtPath);
+
+        for (int i = 0; i < segments.Count; i++)
+        {
+            var seg = segments[i];
+            await writer.WriteLineAsync((i + 1).ToString());
+            await writer.WriteLineAsync($"{FormatSrtTime(seg.Start)} --> {FormatSrtTime(seg.End)}");
+            await writer.WriteLineAsync(seg.Text.Trim());
+            await writer.WriteLineAsync();
         }
     }
 

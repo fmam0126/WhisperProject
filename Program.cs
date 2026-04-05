@@ -67,10 +67,10 @@ class Program
             Console.WriteLine($"sending {Path.GetFileName(outputPath)} to Whisper");
             try
             {
-                
-            // string? transcription = await whisperClient.TranscribeAsync("whisper-v3", "DUMMY", outputPath);
-            await WhisperClient.TranscribeAsync(outputPath, language: settings.WhisperLanguage);
-            Console.WriteLine(Path.GetDirectoryName(outputPath));
+
+                // string? transcription = await whisperClient.TranscribeAsync("whisper-v3", "DUMMY", outputPath);
+                await WhisperClient.TranscribeAsync(outputPath, language: settings.WhisperLanguage, modelPath: settings.WhisperModelpath);
+                Console.WriteLine(Path.GetDirectoryName(outputPath));
             }
             catch (Exception ex)
             {
