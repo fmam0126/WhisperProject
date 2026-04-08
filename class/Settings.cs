@@ -9,5 +9,5 @@ public sealed class Settings
     public required string GptModel { get; set; } = string.Empty;
     public required string WhisperModelpath { get; set; } = string.Empty;
     public required string WhisperModel { get; set; } = string.Empty;
-    public required string WhisperLanguage { get; set; } = string.Empty;
+    public string WhisperLanguage { get; set; } = null!;
 }

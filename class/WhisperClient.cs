@@ -21,6 +21,7 @@ public static class WhisperClient
         // We declare three variables which we will use later, ggmlType, modelFileName and wavFileName
         var ggmlType = GgmlType.LargeV2;
         var modelFileName = modelPath ?? "ggml-largev2.bin";
+        var vadModelFileName = "./ggml-silero-v6.2.0.bin";
         var wavFileName = inputFileName;
 
         using var whisperLogger = LogProvider.AddConsoleLogging(WhisperLogLevel.Debug);
@@ -38,6 +39,7 @@ public static class WhisperClient
         using var processor = whisperFactory.CreateBuilder()
             .WithThreads(Environment.ProcessorCount)
             .WithLanguage(language ?? "auto")
+            .WithVad(vadModelFileName).WithVadThreshold(0.5f).WithVadMinSpeechDurationMs(250).WithVadMaxSpeechDurationS(30f).WithVadSpeechPadMs(30).WithVadSamplesOverlap(0.1f)
             .Build();
 
 
@@ -68,7 +70,7 @@ public static class WhisperClient
         {
             segments.Add(result);
             // Optional: Minimal logging so you know it's working
-            Console.WriteLine($"Transcribing: {result.Start:mm\\:ss}");
+            Console.WriteLine($"Transcribing: {result.Start:mm\\:ss}"+ result.Text);
         }
 
         // 3. Write the SRT file all at once at the end
