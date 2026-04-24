@@ -1,54 +1,97 @@
-using System.ClientModel;
-using System.Net.Http.Headers;
-using System.Text.Json;
-using OpenAI;
-using OpenAI.Audio;
-
-public class WhisperClient
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using Whisper.net;
+using Whisper.net.Ggml;
+using Whisper.net.Logger;
+using System.Globalization;
+using System.Diagnostics.SymbolStore;
+public static class WhisperClient
 {
-    public async Task<string> TranscribeAsync(string model, string apiKey, string inputPath)
+    public static string IdentifiedLanguage { get; private set; } = "gamer";
+    public static string FormatSrtTime(TimeSpan time)
     {
-        OpenAIClientOptions options = new()
-        {
-            Endpoint = new Uri("http://192.168.50.142:52625/v1")
-        };
+        return time.ToString(@"hh\:mm\:ss\,fff", CultureInfo.InvariantCulture);
+    }
 
-        OpenAIClient client = new(new ApiKeyCredential(apiKey), options);
+    // This examples shows how to use Whisper.net to create a transcription from an audio file with 16Khz sample rate.
+    // It uses both Cuda (NVidia GPU) or CPU, and loads the first one that is available.
+    public static async Task TranscribeAsync(string inputFileName, string? modelPath = null, string? language = null)
+    {
+        // We declare three variables which we will use later, ggmlType, modelFileName and wavFileName
+        var ggmlType = GgmlType.LargeV2;
+        var modelFileName = modelPath ?? "ggml-largev2.bin";
+        var wavFileName = inputFileName;
 
-        AudioClient audioClient = client.GetAudioClient(model);
-        AudioTranscriptionOptions transcriptionOptions = new()
-        {
-            ResponseFormat = AudioTranscriptionFormat.Simple,
-            TimestampGranularities = AudioTimestampGranularities.Word | AudioTimestampGranularities.Segment,
-        };
-        try
-        {
-            AudioTranscription transcription = await audioClient.TranscribeAudioAsync(inputPath, transcriptionOptions);
-            Console.WriteLine(transcription);
-            if (string.IsNullOrEmpty(transcription.Text))
-            {
-                return "Server returned 200 OK but empty text. Check if the model is loaded on the server.";
-            }
-            Console.WriteLine("Transcription:");
-            Console.WriteLine($"{transcription.Text}");
-            Console.WriteLine();
-            Console.WriteLine($"Words:");
-            foreach (TranscribedWord word in transcription.Words)
-            {
-                Console.WriteLine($"  {word.Word,15} : {word.StartTime.TotalMilliseconds,5:0} - {word.EndTime.TotalMilliseconds,5:0}");
-            }
+        using var whisperLogger = LogProvider.AddConsoleLogging(WhisperLogLevel.Debug);
 
-            Console.WriteLine();
-            Console.WriteLine($"Segments:");
-            foreach (TranscribedSegment segment in transcription.Segments)
-            {
-                Console.WriteLine($"  {segment.Text,90} : {segment.StartTime.TotalMilliseconds,5:0} - {segment.EndTime.TotalMilliseconds,5:0}");
-            }
-            return transcription.Text;
-        }
-        catch (Exception ex)
+        // This section detects whether the "ggml-largev3.bin" file exists in our project disk. If it doesn't, it downloads it from the internet
+        if (!File.Exists(modelFileName))
         {
-            return $"API Error: {ex.Message}";
+            await DownloadModel(modelFileName, ggmlType);
         }
+
+        // This section creates the whisperFactory object which is used to create the processor object.
+        using var whisperFactory = WhisperFactory.FromPath(modelFileName);
+
+        // This section creates the processor object which is used to process the audio file, it uses language `auto` to detect the language of the audio file.
+        using var processor = whisperFactory.CreateBuilder()
+            .WithThreads(Environment.ProcessorCount)
+            .WithLanguage(language ?? "auto")
+            .Build();
+
+
+
+        using var fileStream = File.OpenRead(wavFileName);
+        // using var writer = new StreamWriter($"{Path.GetDirectoryName(wavFileName)}\\{Path.GetFileNameWithoutExtension(wavFileName)}.srt");
+        // int index = 1;
+
+        var results = new List<object>();
+        // This section processes the audio file and prints the results (start time, end time and text) to the console.
+        // await foreach (var result in processor.ProcessAsync(fileStream))
+        // {
+        //     results.Add(result);
+        //     Console.WriteLine($"{result.Start}->{result.End}: {result.Text}");
+        //     IdentifiedLanguage = result.Language;
+        //     await writer.WriteLineAsync(index.ToString());
+        //     await writer.WriteLineAsync($"{FormatSrtTime(result.Start)} --> {FormatSrtTime(result.End)}");
+        //     await writer.WriteLineAsync(result.Text.Trim());
+        //     await writer.WriteLineAsync();
+
+        //     index++;
+        // }
+
+
+        var segments = new List<SegmentData>();
+
+        await foreach (var result in processor.ProcessAsync(fileStream))
+        {
+            segments.Add(result);
+            // Optional: Minimal logging so you know it's working
+            Console.WriteLine($"Transcribing: {result.Start:mm\\:ss}");
         }
+
+        // 3. Write the SRT file all at once at the end
+        var srtPath = Path.ChangeExtension(inputFileName, ".srt");
+        using var writer = new StreamWriter(srtPath);
+
+        for (int i = 0; i < segments.Count; i++)
+        {
+            var seg = segments[i];
+            await writer.WriteLineAsync((i + 1).ToString());
+            await writer.WriteLineAsync($"{FormatSrtTime(seg.Start)} --> {FormatSrtTime(seg.End)}");
+            await writer.WriteLineAsync(seg.Text.Trim());
+            await writer.WriteLineAsync();
+        }
+    }
+
+    private static async Task DownloadModel(string fileName, GgmlType ggmlType)
+    {
+        Console.WriteLine($"Downloading Model {fileName}");
+        using var modelStream = await WhisperGgmlDownloader.Default.GetGgmlModelAsync(ggmlType);
+        using var fileWriter = File.OpenWrite(fileName);
+        await modelStream.CopyToAsync(fileWriter);
+    }
+
+
 }
