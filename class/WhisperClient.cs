@@ -40,14 +40,14 @@ public static class WhisperClient
             .WithThreads(Environment.ProcessorCount)
             .WithLanguage(language ?? "auto")
             .WithVad(vadModelFileName).WithVadThreshold(0.5f).WithVadMinSpeechDurationMs(250).WithVadMaxSpeechDurationS(30f).WithVadSpeechPadMs(30).WithVadSamplesOverlap(0.1f)
-            .WithSegmentEventHandler(segment =>
-            {
-                Console.WriteLine($"Speech segment detected:");
-                Console.WriteLine($"  Start: {segment.Start.TotalSeconds:F2}s");
-                Console.WriteLine($"  End: {segment.End.TotalSeconds:F2}s");
-                Console.WriteLine($"  Text: {segment.Text}");
-                Console.WriteLine($"  No Speech Probability: {segment.NoSpeechProbability:F4}");
-            })
+            // .WithSegmentEventHandler(segment =>
+            // {
+            //     Console.WriteLine($"Speech segment detected:");
+            //     Console.WriteLine($"  Start: {segment.Start.TotalSeconds:F2}s");
+            //     Console.WriteLine($"  End: {segment.End.TotalSeconds:F2}s");
+            //     Console.WriteLine($"  Text: {segment.Text}");
+            //     Console.WriteLine($"  No Speech Probability: {segment.NoSpeechProbability:F4}");
+            // })
             .Build();
 
 
@@ -76,9 +76,11 @@ public static class WhisperClient
 
         await foreach (var result in processor.ProcessAsync(fileStream))
         {
+            IdentifiedLanguage = result.Language;
             segments.Add(result);
             // Optional: Minimal logging so you know it's working
-            Console.WriteLine($"Transcribing: {result.Start:mm\\:ss}" + result.Text);
+            // Console.WriteLine($"Transcribing: {result.Start:mm\\:ss}" + result.Text);
+            Console.WriteLine($"{result.Start}->{result.End}: {result.Text}");
         }
 
         // 3. Write the SRT file all at once at the end
