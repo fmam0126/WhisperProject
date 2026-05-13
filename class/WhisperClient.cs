@@ -39,15 +39,15 @@ public static class WhisperClient
         using var processor = whisperFactory.CreateBuilder()
             .WithThreads(Environment.ProcessorCount)
             .WithLanguage(language ?? "auto")
-            .WithVad(vadModelFileName).WithVadThreshold(0.5f).WithVadMinSpeechDurationMs(250).WithVadMaxSpeechDurationS(30f).WithVadSpeechPadMs(30).WithVadSamplesOverlap(0.1f)
-            // .WithSegmentEventHandler(segment =>
-            // {
-            //     Console.WriteLine($"Speech segment detected:");
-            //     Console.WriteLine($"  Start: {segment.Start.TotalSeconds:F2}s");
-            //     Console.WriteLine($"  End: {segment.End.TotalSeconds:F2}s");
-            //     Console.WriteLine($"  Text: {segment.Text}");
-            //     Console.WriteLine($"  No Speech Probability: {segment.NoSpeechProbability:F4}");
-            // })
+            .WithVad(vadModelFileName)//.WithVadThreshold(0.5f).WithVadMinSpeechDurationMs(250).WithVadMaxSpeechDurationS(30f).WithVadSpeechPadMs(30).WithVadSamplesOverlap(0.1f)
+                                      // .WithSegmentEventHandler(segment =>
+                                      // {
+                                      //     Console.WriteLine($"Speech segment detected:");
+                                      //     Console.WriteLine($"  Start: {segment.Start.TotalSeconds:F2}s");
+                                      //     Console.WriteLine($"  End: {segment.End.TotalSeconds:F2}s");
+                                      //     Console.WriteLine($"  Text: {segment.Text}");
+                                      //     Console.WriteLine($"  No Speech Probability: {segment.NoSpeechProbability:F4}");
+                                      // })
             .Build();
 
 

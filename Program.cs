@@ -75,6 +75,7 @@ class Program
             catch (Exception ex)
             {
                 Console.WriteLine($"Error: {ex.Message}");
+                break;
             }
 
             Console.WriteLine($"Finished processing {Path.GetFileName(outputPath)}");
