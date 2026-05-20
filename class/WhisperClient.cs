@@ -19,7 +19,7 @@ public static class WhisperClient
 
     // This examples shows how to use Whisper.net to create a transcription from an audio file with 16Khz sample rate.
     // It uses both Cuda (NVidia GPU) or CPU, and loads the first one that is available.
-    public static async Task TranscribeAsync(string inputFileName, string? modelPath = null, string? language = null)
+    public static async Task TranscribeAsync(string inputFileName, string? modelPath = null, string? language = null, bool useVad = false)
     {
         // We declare three variables which we will use later, ggmlType, modelFileName and wavFileName
         var ggmlType = GgmlType.LargeV2;
@@ -39,19 +39,21 @@ public static class WhisperClient
         using var whisperFactory = WhisperFactory.FromPath(modelFileName);
 
         // This section creates the processor object which is used to process the audio file, it uses language `auto` to detect the language of the audio file.
-        using var processor = whisperFactory.CreateBuilder()
+        var builder = whisperFactory.CreateBuilder()
             .WithThreads(Environment.ProcessorCount)
-            .WithLanguage(language ?? "auto")
-            .WithVad(vadModelFileName).WithVadThreshold(0.5f).WithVadMinSpeechDurationMs(250).WithVadMaxSpeechDurationS(30f).WithVadSpeechPadMs(30).WithVadSamplesOverlap(0.1f)
-            // .WithSegmentEventHandler(segment =>
-            // {
-            //     Console.WriteLine($"Speech segment detected:");
-            //     Console.WriteLine($"  Start: {segment.Start.TotalSeconds:F2}s");
-            //     Console.WriteLine($"  End: {segment.End.TotalSeconds:F2}s");
-            //     Console.WriteLine($"  Text: {segment.Text}");
-            //     Console.WriteLine($"  No Speech Probability: {segment.NoSpeechProbability:F4}");
-            // })
-            .Build();
+            .WithLanguage(language ?? "auto");
+
+        if (useVad)
+        {
+            builder.WithVad(vadModelFileName)
+                .WithVadThreshold(0.5f)
+                .WithVadMinSpeechDurationMs(250)
+                .WithVadMaxSpeechDurationS(30f)
+                .WithVadSpeechPadMs(30)
+                .WithVadSamplesOverlap(0.1f);
+        }
+
+        using var processor = builder.Build();
 
 
 

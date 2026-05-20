@@ -66,6 +66,19 @@ class Program
             {
                 outputPath = item;
             }
+            // Apply voice emphasis filter if enabled in settings
+            if (settings.ApplyVoiceEmphasisFilter)
+            {
+                Console.WriteLine("Applying voice emphasis filter...");
+                VoiceEmphasisFilter filter = new VoiceEmphasisFilter();
+
+                string filteredOutputPath = Path.Combine(Path.GetDirectoryName(outputPath) ?? string.Empty, $"{Path.GetFileNameWithoutExtension(outputPath)}_filtered.wav");
+
+                filter.ApplyVoiceEmphasis(outputPath, filteredOutputPath);
+                outputPath = filteredOutputPath; // Use the filtered file for transcription
+            }
+
+            // transcribe the file and save the srt in the same directory as the original file
             Console.WriteLine($"sending {Path.GetFileName(outputPath)} to Whisper");
             try
             {
