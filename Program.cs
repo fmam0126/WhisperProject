@@ -82,7 +82,7 @@ class Program
             }
 
             // transcribe the file and save the srt in the same directory as the original file
-            Console.WriteLine($"sending {Path.GetFileName(outputPath)} to Whisper");
+            Console.WriteLine($"sending {Path.GetFileName(item)} to Whisper");
             try
             {
 
@@ -96,7 +96,7 @@ class Program
                 break;
             }
 
-            Console.WriteLine($"Finished processing {Path.GetFileName(outputPath)}");
+            Console.WriteLine($"Finished processing {Path.GetFileName(item)}");
             Console.WriteLine("--------------------------------------------------");
             Console.WriteLine("Tranlating subtitles...");
             SubtitleTranslator subtitleTranslator = new SubtitleTranslator
@@ -110,7 +110,7 @@ class Program
             };
             string srtFileName = $"{Path.GetDirectoryName(outputPath)}\\{Path.GetFileNameWithoutExtension(outputPath)}.srt";
             await subtitleTranslator.TranslateSrtAsync(srtFileName, Path.GetDirectoryName(item) ?? outputPath);
-            Console.WriteLine($"Finished Translating {Path.GetFileName(outputPath)}");
+            Console.WriteLine($"Finished Translating {Path.GetFileName(item)}");
 
             // Clean up temporary files
             File.Delete(srtFileName); // Delete the temporary translated srt file
