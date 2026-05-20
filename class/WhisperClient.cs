@@ -6,6 +6,9 @@ using Whisper.net.Ggml;
 using Whisper.net.Logger;
 using System.Globalization;
 using System.Diagnostics.SymbolStore;
+
+namespace WhisperProject.Class;
+
 public static class WhisperClient
 {
     public static string IdentifiedLanguage { get; private set; } = "gamer";

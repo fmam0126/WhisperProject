@@ -1,3 +1,5 @@
+namespace WhisperProject.Models;
+
 public sealed class Settings
 {
     public required string InputPath { get; set; } = string.Empty;

@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using System.Security;
+using WhisperProject.Class;
+using WhisperProject.Models;
 
 namespace WhisperProject;
 

@@ -6,6 +6,8 @@ using System.Collections.Concurrent;
 using Polly;
 using Polly.Retry;
 
+namespace WhisperProject.Class;
+
 public class SubtitleTranslator
 {
 

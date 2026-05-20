@@ -1,6 +1,8 @@
 using System.IO;
 using FFMpegCore;
 
+namespace WhisperProject.Class;
+
 class FileConvert
 {
     // Define the working directory
