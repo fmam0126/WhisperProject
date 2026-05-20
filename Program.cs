@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using System.Security;
+using System.Security.Cryptography.X509Certificates;
 using WhisperProject.Class;
 using WhisperProject.Models;
 
@@ -57,6 +58,7 @@ class Program
         foreach (var item in sourceFiles)
         {
             string outputPath;
+
             Console.WriteLine(Path.GetExtension(item));
             if (Path.GetExtension(item) != ".wav")
             {
@@ -72,10 +74,11 @@ class Program
                 Console.WriteLine("Applying voice emphasis filter...");
                 VoiceEmphasisFilter filter = new VoiceEmphasisFilter();
 
-                string filteredOutputPath = Path.Combine(Path.GetDirectoryName(outputPath) ?? string.Empty, $"{Path.GetFileNameWithoutExtension(outputPath)}_filtered.wav");
+                string filteredOutputPath = Path.Combine(Path.GetDirectoryName(outputPath) ?? string.Empty, $"{Path.GetFileNameWithoutExtension(outputPath)}.filtered.wav");
 
                 filter.ApplyVoiceEmphasis(outputPath, filteredOutputPath);
-                outputPath = filteredOutputPath; // Use the filtered file for transcription
+                File.Copy(filteredOutputPath, outputPath, overwrite: true); // Replace original file with filtered file 
+                File.Delete(filteredOutputPath); // Clean up the intermediate filtered file
             }
 
             // transcribe the file and save the srt in the same directory as the original file
@@ -106,9 +109,16 @@ class Program
                 Model = settings.GptModel
             };
             string srtFileName = $"{Path.GetDirectoryName(outputPath)}\\{Path.GetFileNameWithoutExtension(outputPath)}.srt";
-            await subtitleTranslator.TranslateSrtAsync(srtFileName);
+            await subtitleTranslator.TranslateSrtAsync(srtFileName, Path.GetDirectoryName(item) ?? outputPath);
             Console.WriteLine($"Finished Translating {Path.GetFileName(outputPath)}");
+
+            // Clean up temporary files
+            File.Delete(srtFileName); // Delete the temporary translated srt file
             File.Delete(outputPath);
+            if (!Directory.EnumerateFileSystemEntries(Path.GetDirectoryName(outputPath) ?? string.Empty).Any())
+            {
+                Directory.Delete(Path.GetDirectoryName(outputPath) ?? string.Empty); // Delete the temp directory if it's empty
+            }
 
         }
 
