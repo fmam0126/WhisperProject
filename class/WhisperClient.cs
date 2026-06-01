@@ -45,12 +45,13 @@ public static class WhisperClient
 
         if (useVad)
         {
-            builder.WithVad(vadModelFileName)
-                .WithVadThreshold(0.5f)
-                .WithVadMinSpeechDurationMs(250)
-                .WithVadMaxSpeechDurationS(30f)
-                .WithVadSpeechPadMs(30)
-                .WithVadSamplesOverlap(0.1f);
+            // builder.WithVad(vadModelFileName)
+            //     .WithVadThreshold(0.5f)
+            //     .WithVadMinSpeechDurationMs(250)
+            //     .WithVadMaxSpeechDurationS(30f)
+            //     .WithVadSpeechPadMs(30)
+            //     .WithVadSamplesOverlap(0.1f);
+
         }
 
         using var processor = builder.Build();
@@ -62,6 +63,100 @@ public static class WhisperClient
         // int index = 1;
 
         var results = new List<object>();
+        // This section processes the audio file and prints the results (start time, end time and text) to the console.
+        // await foreach (var result in processor.ProcessAsync(fileStream))
+        // {
+        //     results.Add(result);
+        //     Console.WriteLine($"{result.Start}->{result.End}: {result.Text}");
+        //     IdentifiedLanguage = result.Language;
+        //     await writer.WriteLineAsync(index.ToString());
+        //     await writer.WriteLineAsync($"{FormatSrtTime(result.Start)} --> {FormatSrtTime(result.End)}");
+        //     await writer.WriteLineAsync(result.Text.Trim());
+        //     await writer.WriteLineAsync();
+
+        //     index++;
+        // }
+
+
+        var segments = new List<SegmentData>();
+
+        await foreach (var result in processor.ProcessAsync(fileStream))
+        {
+            IdentifiedLanguage = result.Language;
+            segments.Add(result);
+            // Optional: Minimal logging so you know it's working
+            // Console.WriteLine($"Transcribing: {result.Start:mm\\:ss}" + result.Text);
+            Console.WriteLine($"{result.Start}->{result.End}: {result.Text}");
+        }
+
+        // 3. Write the SRT file all at once at the end
+        var srtPath = Path.ChangeExtension(inputFileName, ".srt");
+        using var writer = new StreamWriter(srtPath);
+
+        for (int i = 0; i < segments.Count; i++)
+        {
+            var seg = segments[i];
+            await writer.WriteLineAsync((i + 1).ToString());
+            await writer.WriteLineAsync($"{FormatSrtTime(seg.Start)} --> {FormatSrtTime(seg.End)}");
+            await writer.WriteLineAsync(seg.Text.Trim());
+            await writer.WriteLineAsync();
+        }
+    }
+
+    public static async Task TranscribeVadAsync(string inputFileName, string? modelPath = null, string? language = null)
+    {
+        // We declare three variables which we will use later, ggmlType, modelFileName and wavFileName
+        var ggmlType = GgmlType.LargeV2;
+        var modelFileName = modelPath ?? "ggml-largev2.bin";
+        var vadModelFileName = "./ggml-silero-v6.2.0.bin";
+        var wavFileName = inputFileName;
+
+        using var whisperLogger = LogProvider.AddConsoleLogging(WhisperLogLevel.Debug);
+
+        // This section detects whether the "ggml-largev3.bin" file exists in our project disk. If it doesn't, it downloads it from the internet
+        if (!File.Exists(modelFileName))
+        {
+            await DownloadModel(modelFileName, ggmlType);
+        }
+
+        // This section creates the whisperFactory object which is used to create the processor object.
+        using var whisperVadFactory = WhisperVadFactory.FromPath(vadModelFileName);
+
+        // This section creates the processor object which is used to process the audio file, it uses language `auto` to detect the language of the audio file.
+        var vadBuilder = whisperVadFactory.CreateBuilder()
+            .WithThreads(Environment.ProcessorCount)
+            .WithUseGpu(true)
+            .WithThreshold(0.5f)
+            .WithMaxSpeechDuration(TimeSpan.FromSeconds(30))
+            .WithMinSpeechDuration(TimeSpan.FromMilliseconds(250))
+            .WithMinSilenceDuration(TimeSpan.FromMilliseconds(300))
+            .WithSamplesOverlap(TimeSpan.FromMilliseconds(100))
+            .WithSpeechPadding(TimeSpan.FromMilliseconds(300));
+        // .CreateBuilder()
+        // .WithThreads(Environment.ProcessorCount)
+        // .WithLanguage(language ?? "auto");
+
+
+        using var vadProcessor = vadBuilder.Build();
+
+
+
+
+        using var fileStream = File.OpenRead(wavFileName);
+        // using var writer = new StreamWriter($"{Path.GetDirectoryName(wavFileName)}\\{Path.GetFileNameWithoutExtension(wavFileName)}.srt");
+        // int index = 1;
+
+        var results = new List<object>();
+
+        // this section processes the Vad and Prints the Vad Results to the console
+        await foreach (var result in vadProcessor.DetectSpeechAsync(fileStream))
+        {
+            Console.WriteLine($"VAD Result: {result.Start} -> {result.End}, IsSpeech: {result.IsSpeech}");
+        }
+
+
+
+
         // This section processes the audio file and prints the results (start time, end time and text) to the console.
         // await foreach (var result in processor.ProcessAsync(fileStream))
         // {
