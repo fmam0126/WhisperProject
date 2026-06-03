@@ -6,6 +6,7 @@ using Whisper.net.Ggml;
 using Whisper.net.Logger;
 using System.Globalization;
 using Whisper.net.Wave;
+using WhisperProject.Models;
 
 namespace WhisperProject.Class;
 
@@ -112,6 +113,8 @@ public static class WhisperClient
         var vadModelFileName = "./ggml-silero-v6.2.0.bin";
         var wavFileName = inputFileName;
         const int sampleRate = 16000; // Whisper requires 16kHz
+        // This will hold the mapping between original VAD segments and the processed segments after transcription
+        var vadMappings = new List<VadTimeMap>();
 
         using var whisperLogger = LogProvider.AddConsoleLogging(WhisperLogLevel.Debug);
 
@@ -142,9 +145,18 @@ public static class WhisperClient
             .Build();
 
         var vadSegments = await vadProcessor.DetectSpeechAsync(samples);
+
+        vadMappings.Clear();
         Console.WriteLine($"VAD found {vadSegments.Count} speech segment(s):");
         foreach (var seg in vadSegments)
         {
+            vadMappings.Add(new VadTimeMap
+            {
+                OriginalTimeStart = seg.Start,
+                OriginalTimeEnd = seg.End,
+                ProcessedTimeStart = TimeSpan.Zero, // Will be updated after transcription
+                ProcessedTimeEnd = TimeSpan.Zero    // Will be updated after transcription
+            });
             Console.WriteLine($"  {seg.Start} -> {seg.End} ({seg.End - seg.Start})");
         }
 
@@ -154,59 +166,61 @@ public static class WhisperClient
             return;
         }
 
-        // ── Step 3: Transcribe each VAD segment individually ──
-        using var whisperFactory = WhisperFactory.FromPath(modelFileName);
-        using var processor = whisperFactory.CreateBuilder()
-            .WithThreads(Environment.ProcessorCount)
-            .WithLanguage(language ?? "auto")
-            .Build();
 
-        var allSegments = new List<SegmentData>();
-        int srtIndex = 1;
 
-        var srtPath = Path.ChangeExtension(inputFileName, ".srt");
-        using var writer = new StreamWriter(srtPath);
+        // // ── Step 3: Transcribe each VAD segment individually ──
+        // using var whisperFactory = WhisperFactory.FromPath(modelFileName);
+        // using var processor = whisperFactory.CreateBuilder()
+        //     .WithThreads(Environment.ProcessorCount)
+        //     .WithLanguage(language ?? "auto")
+        //     .Build();
 
-        foreach (var vadSegment in vadSegments)
-        {
-            // Convert TimeSpan to sample indices
-            int startSample = (int)(vadSegment.Start.TotalSeconds * sampleRate);
-            int endSample = (int)(vadSegment.End.TotalSeconds * sampleRate);
+        // var allSegments = new List<SegmentData>();
+        // int srtIndex = 1;
 
-            // Clamp to valid range
-            startSample = Math.Max(0, startSample);
-            endSample = Math.Min(samples.Length, endSample);
+        // var srtPath = Path.ChangeExtension(inputFileName, ".srt");
+        // using var writer = new StreamWriter(srtPath);
 
-            if (endSample <= startSample) continue;
+        // foreach (var vadSegment in vadSegments)
+        // {
+        //     // Convert TimeSpan to sample indices
+        //     int startSample = (int)(vadSegment.Start.TotalSeconds * sampleRate);
+        //     int endSample = (int)(vadSegment.End.TotalSeconds * sampleRate);
 
-            // Slice the samples for this VAD segment
-            var slice = samples.AsMemory(startSample, endSample - startSample);
+        //     // Clamp to valid range
+        //     startSample = Math.Max(0, startSample);
+        //     endSample = Math.Min(samples.Length, endSample);
 
-            Console.WriteLine($"Transcribing segment {vadSegment.Start} -> {vadSegment.End}...");
+        //     if (endSample <= startSample) continue;
 
-            // Transcribe the slice – timestamps will be relative to slice start
-            await foreach (var seg in processor.ProcessAsync(slice))
-            {
-                IdentifiedLanguage = seg.Language;
+        //     // Slice the samples for this VAD segment
+        //     var slice = samples.AsMemory(startSample, endSample - startSample);
 
-                // Offset timestamps by the VAD segment's start time
-                var absoluteStart = vadSegment.Start + seg.Start;
-                var absoluteEnd = vadSegment.Start + seg.End;
+        //     Console.WriteLine($"Transcribing segment {vadSegment.Start} -> {vadSegment.End}...");
 
-                Console.WriteLine($"  {absoluteStart}->{absoluteEnd}: {seg.Text}");
+        //     // Transcribe the slice – timestamps will be relative to slice start
+        //     await foreach (var seg in processor.ProcessAsync(slice))
+        //     {
+        //         IdentifiedLanguage = seg.Language;
 
-                // Write directly to SRT
-                await writer.WriteLineAsync(srtIndex.ToString());
-                await writer.WriteLineAsync($"{FormatSrtTime(absoluteStart)} --> {FormatSrtTime(absoluteEnd)}");
-                await writer.WriteLineAsync(seg.Text.Trim());
-                await writer.WriteLineAsync();
+        //         // Offset timestamps by the VAD segment's start time
+        //         var absoluteStart = vadSegment.Start + seg.Start;
+        //         var absoluteEnd = vadSegment.Start + seg.End;
 
-                srtIndex++;
-                allSegments.Add(seg);
-            }
-        }
+        //         Console.WriteLine($"  {absoluteStart}->{absoluteEnd}: {seg.Text}");
 
-        Console.WriteLine($"Transcription complete: {srtIndex - 1} subtitle entries written to {srtPath}");
+        //         // Write directly to SRT
+        //         await writer.WriteLineAsync(srtIndex.ToString());
+        //         await writer.WriteLineAsync($"{FormatSrtTime(absoluteStart)} --> {FormatSrtTime(absoluteEnd)}");
+        //         await writer.WriteLineAsync(seg.Text.Trim());
+        //         await writer.WriteLineAsync();
+
+        //         srtIndex++;
+        //         allSegments.Add(seg);
+        //     }
+        // }
+
+        // Console.WriteLine($"Transcription complete: {srtIndex - 1} subtitle entries written to {srtPath}");
     }
 
     private static async Task DownloadModel(string fileName, GgmlType ggmlType)
