@@ -6,7 +6,7 @@ using Whisper.net.Ggml;
 using Whisper.net.Logger;
 using System.Globalization;
 using Whisper.net.Wave;
-using WhisperProject.Models;
+
 
 namespace WhisperProject.Class;
 
@@ -105,34 +105,32 @@ public static class WhisperClient
     }
 
 
-    // this is dumb. redo.
     public static async Task TranscribeVadAsync(string inputFileName, string? modelPath = null, string? language = null)
     {
         var ggmlType = GgmlType.LargeV2;
         var modelFileName = modelPath ?? "ggml-largev2.bin";
         var vadModelFileName = "./ggml-silero-v6.2.0.bin";
+        var sileroVadType = SileroVadType.V6_2_0;
         var wavFileName = inputFileName;
-        const int sampleRate = 16000; // Whisper requires 16kHz
-        // This will hold the mapping between original VAD segments and the processed segments after transcription
-        var vadMappings = new List<VadTimeMap>();
+        const int sampleRate = 16000;
 
         using var whisperLogger = LogProvider.AddConsoleLogging(WhisperLogLevel.Debug);
 
-        // Download models if missing
         if (!File.Exists(modelFileName))
         {
             await DownloadModel(modelFileName, ggmlType);
         }
+        if (!File.Exists(vadModelFileName))
+        {
+            await DownloadVadModel(vadModelFileName, sileroVadType);
+        }
 
-        // ── Step 1: Parse the WAV file and extract raw float samples ──
         using var fileStream = File.OpenRead(wavFileName);
         var waveParser = new WaveParser(fileStream);
         var samples = await waveParser.GetAvgSamplesAsync();
         Console.WriteLine($"Loaded {samples.Length} samples ({samples.Length / (double)sampleRate:F1}s of audio)");
 
-        // ── Step 2: Run VAD to detect speech segments ──
         using var whisperVadFactory = WhisperVadFactory.FromPath(vadModelFileName);
-
         using var vadProcessor = whisperVadFactory.CreateBuilder()
             .WithThreads(Environment.ProcessorCount)
             .WithUseGpu(false)
@@ -146,17 +144,9 @@ public static class WhisperClient
 
         var vadSegments = await vadProcessor.DetectSpeechAsync(samples);
 
-        vadMappings.Clear();
         Console.WriteLine($"VAD found {vadSegments.Count} speech segment(s):");
         foreach (var seg in vadSegments)
         {
-            vadMappings.Add(new VadTimeMap
-            {
-                OriginalTimeStart = seg.Start,
-                OriginalTimeEnd = seg.End,
-                ProcessedTimeStart = TimeSpan.Zero, // Will be updated after transcription
-                ProcessedTimeEnd = TimeSpan.Zero    // Will be updated after transcription
-            });
             Console.WriteLine($"  {seg.Start} -> {seg.End} ({seg.End - seg.Start})");
         }
 
@@ -166,67 +156,165 @@ public static class WhisperClient
             return;
         }
 
+        const double silenceLenSec = 0.1;
+        int silenceSamples = (int)(silenceLenSec * sampleRate);
+        var mappingTable = new List<VadTimeMapping>();
 
+        int filteredSampleCount = 0;
+        for (int i = 0; i < vadSegments.Count; i++)
+        {
+            int startSample = (int)(vadSegments[i].Start.TotalSeconds * sampleRate);
+            int endSample = (int)(vadSegments[i].End.TotalSeconds * sampleRate);
+            startSample = Math.Clamp(startSample, 0, samples.Length - 1);
+            endSample = Math.Clamp(endSample, 0, samples.Length - 1);
+            filteredSampleCount += (endSample - startSample);
+        }
+        int totalSilenceSamples = (vadSegments.Count > 1) ? (vadSegments.Count - 1) * silenceSamples : 0;
+        int totalSamplesNeeded = filteredSampleCount + totalSilenceSamples;
 
-        // // ── Step 3: Transcribe each VAD segment individually ──
-        // using var whisperFactory = WhisperFactory.FromPath(modelFileName);
-        // using var processor = whisperFactory.CreateBuilder()
-        //     .WithThreads(Environment.ProcessorCount)
-        //     .WithLanguage(language ?? "auto")
-        //     .Build();
+        var filteredSamples = new float[totalSamplesNeeded];
 
-        // var allSegments = new List<SegmentData>();
-        // int srtIndex = 1;
+        int offset = 0;
+        for (int i = 0; i < vadSegments.Count; i++)
+        {
+            int segmentStart = (int)(vadSegments[i].Start.TotalSeconds * sampleRate);
+            int segmentEnd = (int)(vadSegments[i].End.TotalSeconds * sampleRate);
+            segmentStart = Math.Clamp(segmentStart, 0, samples.Length - 1);
+            segmentEnd = Math.Clamp(segmentEnd, 0, samples.Length - 1);
 
-        // var srtPath = Path.ChangeExtension(inputFileName, ".srt");
-        // using var writer = new StreamWriter(srtPath);
+            int originalLen = segmentEnd - segmentStart;
 
-        // foreach (var vadSegment in vadSegments)
-        // {
-        //     // Convert TimeSpan to sample indices
-        //     int startSample = (int)(vadSegment.Start.TotalSeconds * sampleRate);
-        //     int endSample = (int)(vadSegment.End.TotalSeconds * sampleRate);
+            if (originalLen > 0)
+            {
+                long origStart = vadSegments[i].Start.Ticks;
+                long origEnd = vadSegments[i].End.Ticks;
+                long vadStart = (long)(offset / (double)sampleRate * TimeSpan.TicksPerSecond);
+                long vadEnd = (long)((offset + originalLen) / (double)sampleRate * TimeSpan.TicksPerSecond);
 
-        //     // Clamp to valid range
-        //     startSample = Math.Max(0, startSample);
-        //     endSample = Math.Min(samples.Length, endSample);
+                mappingTable.Add(new VadTimeMapping(vadStart, origStart));
+                mappingTable.Add(new VadTimeMapping(vadEnd, origEnd));
 
-        //     if (endSample <= startSample) continue;
+                Array.Copy(samples, segmentStart, filteredSamples, offset, originalLen);
+                offset += originalLen;
 
-        //     // Slice the samples for this VAD segment
-        //     var slice = samples.AsMemory(startSample, endSample - startSample);
+                if (i < vadSegments.Count - 1)
+                {
+                    long silStart = (long)(offset / (double)sampleRate * TimeSpan.TicksPerSecond);
+                    long silEnd = (long)((offset + silenceSamples) / (double)sampleRate * TimeSpan.TicksPerSecond);
+                    long origSilStart = vadSegments[i].End.Ticks;
+                    long origSilEnd = vadSegments[i + 1].Start.Ticks;
 
-        //     Console.WriteLine($"Transcribing segment {vadSegment.Start} -> {vadSegment.End}...");
+                    mappingTable.Add(new VadTimeMapping(silStart, origSilStart));
+                    mappingTable.Add(new VadTimeMapping(silEnd, origSilEnd));
 
-        //     // Transcribe the slice – timestamps will be relative to slice start
-        //     await foreach (var seg in processor.ProcessAsync(slice))
-        //     {
-        //         IdentifiedLanguage = seg.Language;
+                    Array.Clear(filteredSamples, offset, silenceSamples);
+                    offset += silenceSamples;
+                }
+            }
+        }
 
-        //         // Offset timestamps by the VAD segment's start time
-        //         var absoluteStart = vadSegment.Start + seg.Start;
-        //         var absoluteEnd = vadSegment.Start + seg.End;
+        mappingTable.Sort((a, b) => a.ProcessedTimeTicks.CompareTo(b.ProcessedTimeTicks));
+        for (int i = mappingTable.Count - 1; i > 0; i--)
+        {
+            if (mappingTable[i].ProcessedTimeTicks == mappingTable[i - 1].ProcessedTimeTicks)
+            {
+                mappingTable.RemoveAt(i);
+            }
+        }
 
-        //         Console.WriteLine($"  {absoluteStart}->{absoluteEnd}: {seg.Text}");
+        Console.WriteLine($"Filtered audio: {samples.Length} -> {offset} samples ({100.0f * (1.0f - (float)offset / samples.Length):F1}% reduction)");
+        Console.WriteLine($"Time mapping table has {mappingTable.Count} points");
 
-        //         // Write directly to SRT
-        //         await writer.WriteLineAsync(srtIndex.ToString());
-        //         await writer.WriteLineAsync($"{FormatSrtTime(absoluteStart)} --> {FormatSrtTime(absoluteEnd)}");
-        //         await writer.WriteLineAsync(seg.Text.Trim());
-        //         await writer.WriteLineAsync();
+        using var whisperFactory = WhisperFactory.FromPath(modelFileName);
+        using var processor = whisperFactory.CreateBuilder()
+            .WithThreads(Environment.ProcessorCount)
+            .WithLanguage(language ?? "auto")
+            .Build();
 
-        //         srtIndex++;
-        //         allSegments.Add(seg);
-        //     }
-        // }
+        var subtitles = new List<(TimeSpan Start, TimeSpan End, string Text)>();
+        await foreach (var result in processor.ProcessAsync(filteredSamples.AsMemory(0, offset)))
+        {
+            IdentifiedLanguage = result.Language;
+            var originalStart = MapToOriginalTime(result.Start.Ticks, mappingTable);
+            var originalEnd = MapToOriginalTime(result.End.Ticks, mappingTable);
+            Console.WriteLine($"{originalStart}->{originalEnd}: {result.Text}");
+            subtitles.Add((originalStart, originalEnd, result.Text));
+        }
 
-        // Console.WriteLine($"Transcription complete: {srtIndex - 1} subtitle entries written to {srtPath}");
+        var srtPath = Path.ChangeExtension(inputFileName, ".srt");
+        using var writer = new StreamWriter(srtPath);
+
+        for (int i = 0; i < subtitles.Count; i++)
+        {
+            var (start, end, text) = subtitles[i];
+            await writer.WriteLineAsync((i + 1).ToString());
+            await writer.WriteLineAsync($"{FormatSrtTime(start)} --> {FormatSrtTime(end)}");
+            await writer.WriteLineAsync(text.Trim());
+            await writer.WriteLineAsync();
+        }
+
+        Console.WriteLine($"Transcription complete: {subtitles.Count} subtitle entries written to {srtPath}");
+    }
+
+    private static TimeSpan MapToOriginalTime(long processedTimeTicks, List<VadTimeMapping> mappingTable)
+    {
+        if (mappingTable.Count == 0)
+            return TimeSpan.FromTicks(processedTimeTicks);
+
+        int idx = mappingTable.BinarySearch(
+            new VadTimeMapping(processedTimeTicks, 0),
+            VadTimeMapping.ProcessedTimeComparer);
+
+        if (idx >= 0)
+            return TimeSpan.FromTicks(mappingTable[idx].OriginalTimeTicks);
+
+        idx = ~idx;
+
+        if (idx == 0)
+        {
+            var m = mappingTable[0];
+            if (m.ProcessedTimeTicks == 0)
+                return TimeSpan.FromTicks(0);
+            double ratio = (double)processedTimeTicks / m.ProcessedTimeTicks;
+            return TimeSpan.FromTicks((long)(m.OriginalTimeTicks * ratio));
+        }
+
+        if (idx >= mappingTable.Count)
+        {
+            var m = mappingTable[mappingTable.Count - 1];
+            long delta = processedTimeTicks - m.ProcessedTimeTicks;
+            return TimeSpan.FromTicks(m.OriginalTimeTicks + delta);
+        }
+
+        var prev = mappingTable[idx - 1];
+        var next = mappingTable[idx];
+
+        if (next.ProcessedTimeTicks == prev.ProcessedTimeTicks)
+            return TimeSpan.FromTicks(prev.OriginalTimeTicks);
+
+        double t = (double)(processedTimeTicks - prev.ProcessedTimeTicks)
+                   / (next.ProcessedTimeTicks - prev.ProcessedTimeTicks);
+        long origTicks = (long)(prev.OriginalTimeTicks + t * (next.OriginalTimeTicks - prev.OriginalTimeTicks));
+        return TimeSpan.FromTicks(origTicks);
+    }
+
+    private record VadTimeMapping(long ProcessedTimeTicks, long OriginalTimeTicks)
+    {
+        public static readonly IComparer<VadTimeMapping> ProcessedTimeComparer =
+            Comparer<VadTimeMapping>.Create((a, b) => a.ProcessedTimeTicks.CompareTo(b.ProcessedTimeTicks));
     }
 
     private static async Task DownloadModel(string fileName, GgmlType ggmlType)
     {
         Console.WriteLine($"Downloading Model {fileName}");
         using var modelStream = await WhisperGgmlDownloader.Default.GetGgmlModelAsync(ggmlType);
+        using var fileWriter = File.OpenWrite(fileName);
+        await modelStream.CopyToAsync(fileWriter);
+    }
+    private static async Task DownloadVadModel(string fileName, SileroVadType vadType)
+    {
+        Console.WriteLine($"Downloading VAD Model {fileName}");
+        using var modelStream = await WhisperGgmlDownloader.Default.GetGgmlSileroVadModelAsync(vadType);
         using var fileWriter = File.OpenWrite(fileName);
         await modelStream.CopyToAsync(fileWriter);
     }
