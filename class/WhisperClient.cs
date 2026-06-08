@@ -20,7 +20,7 @@ public static class WhisperClient
 
     // This examples shows how to use Whisper.net to create a transcription from an audio file with 16Khz sample rate.
     // It uses both Cuda (NVidia GPU) or CPU, and loads the first one that is available.
-    public static async Task TranscribeAsync(string inputFileName, string? modelPath = null, string? language = null, bool useVad = false)
+    public static async Task TranscribeAsync(string inputFileName, string? modelPath = null, string? language = null)
     {
         // We declare three variables which we will use later, ggmlType, modelFileName and wavFileName
         var ggmlType = GgmlType.LargeV2;
@@ -44,16 +44,6 @@ public static class WhisperClient
             .WithThreads(Environment.ProcessorCount)
             .WithLanguage(language ?? "auto");
 
-        if (useVad)
-        {
-            // builder.WithVad(vadModelFileName)
-            //     .WithVadThreshold(0.5f)
-            //     .WithVadMinSpeechDurationMs(250)
-            //     .WithVadMaxSpeechDurationS(30f)
-            //     .WithVadSpeechPadMs(30)
-            //     .WithVadSamplesOverlap(0.1f);
-
-        }
 
         using var processor = builder.Build();
 

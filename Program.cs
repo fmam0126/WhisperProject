@@ -60,15 +60,11 @@ class Program
             string outputPath;
 
             Console.WriteLine(Path.GetExtension(item));
-            if (Path.GetExtension(item) != ".wav")
-            {
-                outputPath = await fileConvert.ConvertToWav(item);
-            }
-            else
-            {
-                outputPath = item;
-            }
+
+            outputPath = await fileConvert.ConvertToWav(item);
+
             // Apply voice emphasis filter if enabled in settings
+            // redo with better filter
             if (settings.ApplyVoiceEmphasisFilter)
             {
                 Console.WriteLine("Applying voice emphasis filter...");
@@ -85,10 +81,14 @@ class Program
             Console.WriteLine($"sending {Path.GetFileName(item)} to Whisper");
             try
             {
-
-                // string? transcription = await whisperClient.TranscribeAsync("whisper-v3", "DUMMY", outputPath);
-                await WhisperClient.TranscribeVadAsync(outputPath, modelPath: settings.WhisperModelpath, language: settings.WhisperLanguage);
-                // await WhisperClient.TranscribeAsync(outputPath, language: settings.WhisperLanguage, modelPath: settings.WhisperModelpath, useVad: settings.UseVoiceActivityDetection);
+                if (settings.UseVoiceActivityDetection)
+                {
+                    await WhisperClient.TranscribeVadAsync(outputPath, modelPath: settings.WhisperModelpath, language: settings.WhisperLanguage);
+                }
+                else
+                {
+                    await WhisperClient.TranscribeAsync(outputPath, language: settings.WhisperLanguage, modelPath: settings.WhisperModelpath);
+                }
                 Console.WriteLine(Path.GetDirectoryName(outputPath));
             }
             catch (Exception ex)
