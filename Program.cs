@@ -93,32 +93,47 @@ class Program
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error: {ex.Message}");
-                break;
+                Console.WriteLine($"Error processing {Path.GetFileName(item)}: {ex}");
+                continue;
             }
 
             Console.WriteLine($"Finished processing {Path.GetFileName(item)}");
             Console.WriteLine("--------------------------------------------------");
             Console.WriteLine("Tranlating subtitles...");
-            SubtitleTranslator subtitleTranslator = new SubtitleTranslator
+            try
             {
-                Url = settings.Url,
-                Port = settings.Port,
-                TargetLanguage = settings.TargetLanguage,
-                ApiKey = settings.ApiKey,
-                GptPath = settings.GptPath,
-                Model = settings.GptModel
-            };
-            string srtFileName = $"{Path.GetDirectoryName(outputPath)}\\{Path.GetFileNameWithoutExtension(outputPath)}.srt";
-            await subtitleTranslator.TranslateSrtAsync(srtFileName, Path.GetDirectoryName(item) ?? outputPath);
-            Console.WriteLine($"Finished Translating {Path.GetFileName(item)}");
+                SubtitleTranslator subtitleTranslator = new SubtitleTranslator
+                {
+                    Url = settings.Url,
+                    Port = settings.Port,
+                    TargetLanguage = settings.TargetLanguage,
+                    ApiKey = settings.ApiKey,
+                    GptPath = settings.GptPath,
+                    Model = settings.GptModel
+                };
+                string srtFileName = $"{Path.GetDirectoryName(outputPath)}\\{Path.GetFileNameWithoutExtension(outputPath)}.srt";
+                await subtitleTranslator.TranslateSrtAsync(srtFileName, Path.GetDirectoryName(item) ?? outputPath);
+                Console.WriteLine($"Finished Translating {Path.GetFileName(item)}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Translation error for {Path.GetFileName(item)}: {ex}");
+            }
 
             // Clean up temporary files
-            File.Delete(srtFileName); // Delete the temporary translated srt file
-            File.Delete(outputPath);
-            if (!Directory.EnumerateFileSystemEntries(Path.GetDirectoryName(outputPath) ?? string.Empty).Any())
+            try
             {
-                Directory.Delete(Path.GetDirectoryName(outputPath) ?? string.Empty); // Delete the temp directory if it's empty
+                string srtFileName = $"{Path.GetDirectoryName(outputPath)}\\{Path.GetFileNameWithoutExtension(outputPath)}.srt";
+                if (File.Exists(srtFileName)) File.Delete(srtFileName);
+                if (File.Exists(outputPath)) File.Delete(outputPath);
+                if (!Directory.EnumerateFileSystemEntries(Path.GetDirectoryName(outputPath) ?? string.Empty).Any())
+                {
+                    Directory.Delete(Path.GetDirectoryName(outputPath) ?? string.Empty);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Cleanup error for {Path.GetFileName(item)}: {ex.Message}");
             }
 
         }

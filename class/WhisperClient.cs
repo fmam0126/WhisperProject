@@ -71,26 +71,45 @@ public static class WhisperClient
 
         var segments = new List<SegmentData>();
 
-        await foreach (var result in processor.ProcessAsync(fileStream))
+        try
         {
-            IdentifiedLanguage = result.Language;
-            segments.Add(result);
-            // Optional: Minimal logging so you know it's working
-            // Console.WriteLine($"Transcribing: {result.Start:mm\\:ss}" + result.Text);
-            Console.WriteLine($"{result.Start}->{result.End}: {result.Text}");
+            await foreach (var result in processor.ProcessAsync(fileStream))
+            {
+                IdentifiedLanguage = result.Language;
+                segments.Add(result);
+                Console.WriteLine($"{result.Start}->{result.End}: {result.Text}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Transcription interrupted: {ex}");
         }
 
-        // 3. Write the SRT file all at once at the end
-        var srtPath = Path.ChangeExtension(inputFileName, ".srt");
-        using var writer = new StreamWriter(srtPath);
-
-        for (int i = 0; i < segments.Count; i++)
+        if (segments.Count == 0)
         {
-            var seg = segments[i];
-            await writer.WriteLineAsync((i + 1).ToString());
-            await writer.WriteLineAsync($"{FormatSrtTime(seg.Start)} --> {FormatSrtTime(seg.End)}");
-            await writer.WriteLineAsync(seg.Text.Trim());
-            await writer.WriteLineAsync();
+            Console.WriteLine("No subtitles were produced. Skipping SRT write.");
+            return;
+        }
+
+        var srtPath = Path.ChangeExtension(inputFileName, ".srt");
+        try
+        {
+            using var writer = new StreamWriter(srtPath);
+
+            for (int i = 0; i < segments.Count; i++)
+            {
+                var seg = segments[i];
+                await writer.WriteLineAsync((i + 1).ToString());
+                await writer.WriteLineAsync($"{FormatSrtTime(seg.Start)} --> {FormatSrtTime(seg.End)}");
+                await writer.WriteLineAsync(seg.Text.Trim());
+                await writer.WriteLineAsync();
+            }
+
+            Console.WriteLine($"Transcription complete: {segments.Count} subtitle entries written to {srtPath}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to write SRT file: {ex}");
         }
     }
 
@@ -222,28 +241,48 @@ public static class WhisperClient
             .Build();
 
         var subtitles = new List<(TimeSpan Start, TimeSpan End, string Text)>();
-        await foreach (var result in processor.ProcessAsync(filteredSamples.AsMemory(0, offset)))
+        try
         {
-            IdentifiedLanguage = result.Language;
-            var originalStart = MapToOriginalTime(result.Start.Ticks, mappingTable);
-            var originalEnd = MapToOriginalTime(result.End.Ticks, mappingTable);
-            Console.WriteLine($"{originalStart}->{originalEnd}: {result.Text}");
-            subtitles.Add((originalStart, originalEnd, result.Text));
+            await foreach (var result in processor.ProcessAsync(filteredSamples.AsMemory(0, offset)))
+            {
+                IdentifiedLanguage = result.Language;
+                var originalStart = MapToOriginalTime(result.Start.Ticks, mappingTable);
+                var originalEnd = MapToOriginalTime(result.End.Ticks, mappingTable);
+                Console.WriteLine($"{originalStart}->{originalEnd}: {result.Text}");
+                subtitles.Add((originalStart, originalEnd, result.Text));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Transcription interrupted: {ex}");
+        }
+
+        if (subtitles.Count == 0)
+        {
+            Console.WriteLine("No subtitles were produced. Skipping SRT write.");
+            return;
         }
 
         var srtPath = Path.ChangeExtension(inputFileName, ".srt");
-        using var writer = new StreamWriter(srtPath);
-
-        for (int i = 0; i < subtitles.Count; i++)
+        try
         {
-            var (start, end, text) = subtitles[i];
-            await writer.WriteLineAsync((i + 1).ToString());
-            await writer.WriteLineAsync($"{FormatSrtTime(start)} --> {FormatSrtTime(end)}");
-            await writer.WriteLineAsync(text.Trim());
-            await writer.WriteLineAsync();
-        }
+            using var writer = new StreamWriter(srtPath);
 
-        Console.WriteLine($"Transcription complete: {subtitles.Count} subtitle entries written to {srtPath}");
+            for (int i = 0; i < subtitles.Count; i++)
+            {
+                var (start, end, text) = subtitles[i];
+                await writer.WriteLineAsync((i + 1).ToString());
+                await writer.WriteLineAsync($"{FormatSrtTime(start)} --> {FormatSrtTime(end)}");
+                await writer.WriteLineAsync(text.Trim());
+                await writer.WriteLineAsync();
+            }
+
+            Console.WriteLine($"Transcription complete: {subtitles.Count} subtitle entries written to {srtPath}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to write SRT file: {ex}");
+        }
     }
 
     private static TimeSpan MapToOriginalTime(long processedTimeTicks, List<VadTimeMapping> mappingTable)
