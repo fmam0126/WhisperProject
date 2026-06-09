@@ -74,7 +74,7 @@ public class SubtitleTranslator
                     await semaphore.WaitAsync();
                     try
                     {
-                        string processedText = await pipeline.ExecuteAsync(async token => { return await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), UrlBuilder(Url)); });
+                        string processedText = await pipeline.ExecuteAsync(async token => { return await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), UrlBuilder(Url), token); });
                         translatedLines.Add((index, processedText));
                         Console.WriteLine(processedText.Trim().ReplaceLineEndings(string.Empty));
                         await Task.Delay(50);
@@ -146,12 +146,12 @@ public class SubtitleTranslator
                 var translatedLines = new List<string>();
 
                 var options = new ParallelOptions { MaxDegreeOfParallelism = 4 }; // limit concurrency to 4 
-                await Parallel.ForEachAsync(lines, options, async (line, CancellationToken) =>
+                await Parallel.ForEachAsync(lines, options, async (line, cancellationToken) =>
                 {
                     string processedText;
                     try
                     {
-                        processedText = await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), UrlBuilder(Url));
+                        processedText = await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), UrlBuilder(Url), cancellationToken);
 
                     }
                     catch (System.Exception)
@@ -250,9 +250,10 @@ public class SubtitleTranslator
     {
         return $"Please Translate the following text from {language} to {TargetLanguage} without adding comments. just output translated text: \n{Prompt}";
     }
-    private async Task<string> SendToLLMAsync(string Prompt, string url)
+    private async Task<string> SendToLLMAsync(string Prompt, string url, CancellationToken cancellationToken = default)
     {
         HttpClient httpClient = new HttpClient();
+        httpClient.Timeout = System.Threading.Timeout.InfiniteTimeSpan;
 
         var messages = new List<object>();
         messages.Add(new { role = "user", content = Prompt });
@@ -264,7 +265,7 @@ public class SubtitleTranslator
         };
         var json = JsonSerializer.Serialize(payload);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
-        using var response = await httpClient.PostAsync(url, content);
+        using var response = await httpClient.PostAsync(url, content, cancellationToken);
         // if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
         // {
         //     Console.WriteLine($"{response.Headers} {response.Content} {response}");
