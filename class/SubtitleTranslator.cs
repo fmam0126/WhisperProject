@@ -55,7 +55,7 @@ public class SubtitleTranslator
                         }
 
                     }) // Add retry 
-                    .AddTimeout(TimeSpan.FromSeconds(60)) // Add 1 minute timeout
+                    .AddTimeout(TimeSpan.FromMinutes(2)) // Add 2 minute timeout
                     .Build(); // Builds the resilience pipeline
 
 
