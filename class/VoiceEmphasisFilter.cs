@@ -14,7 +14,7 @@ public class VoiceEmphasisFilter
     /// </summary>
     /// <param name="inputFilePath">Path to the input audio file (e.g., WAV format).</param>
     /// <param name="outputFilePath">Path where the processed audio file will be saved.</param>
-    public void ApplyVoiceEmphasis(string inputFilePath, string outputFilePath)
+    public async Task ApplyVoiceEmphasis(string inputFilePath, string outputFilePath)
     {
         // Read audio source
         using var reader = new AudioFileReader(inputFilePath);
@@ -70,8 +70,22 @@ public class VoiceEmphasisFilter
     /// <param name="inputFilePath">input file path</param>
     /// <param name="outputFilePath">output file path</param>
     /// <param name="modelPath">path to the voice enhancement onnx model</param>
-    public void ApplyDpdfNetVoiceEnhancement(string inputFilePath, string outputFilePath, string modelPath)
+    public async Task ApplyDpdfNetVoiceEnhancement(string inputFilePath, string outputFilePath, string modelPath)
     {
+        if (!File.Exists(modelPath))
+        {
+            Console.WriteLine($"DPDFNet model not found at {modelPath}.");
+            try
+            {
+                await DownloadDpdfNetModel(modelPath);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to download DPDFNet model: {ex.Message}");
+                throw;
+            }
+        }
+
         var config = new OfflineSpeechDenoiserConfig();
         config.Model.Dpdfnet.Model = modelPath;
         config.Model.Debug = 1;
@@ -91,6 +105,22 @@ public class VoiceEmphasisFilter
         {
             Console.WriteLine($"failed to save denoised audio to {outputFilePath}");
         }
+    }
+    private static async Task DownloadDpdfNetModel(string modelPath)
+    {
+        if (File.Exists(modelPath))
+        {
+            Console.WriteLine($"DPDFNet model already exists at {modelPath}");
+            return;
+        }
+
+        Console.WriteLine($"Downloading DPDFNet model to {modelPath} ...");
+        using var httpClient = new HttpClient();
+        var modelUrl = "https://github.com/k2-fsa/sherpa-onnx/releases/download/speech-enhancement-models/dpdfnet8.onnx";
+        var response = await httpClient.GetAsync(modelUrl);
+        response.EnsureSuccessStatusCode();
+        await File.WriteAllBytesAsync(modelPath, await response.Content.ReadAsByteArrayAsync());
+        Console.WriteLine("DPDFNet model downloaded successfully.");
     }
 }
 public class WaveReader

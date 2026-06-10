@@ -75,7 +75,7 @@ class Program
                 // filter.ApplyVoiceEmphasis(outputPath, filteredOutputPath);
                 try
                 {
-                    filter.ApplyDpdfNetVoiceEnhancement(outputPath, filteredOutputPath, settings.DpdfNetModelPath);
+                    await filter.ApplyDpdfNetVoiceEnhancement(outputPath, filteredOutputPath, settings.DpdfNetModelPath);
 
                 }
                 catch (System.Exception ex)
