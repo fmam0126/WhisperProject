@@ -72,7 +72,17 @@ class Program
 
                 string filteredOutputPath = Path.Combine(Path.GetDirectoryName(outputPath) ?? string.Empty, $"{Path.GetFileNameWithoutExtension(outputPath)}.filtered.wav");
 
-                filter.ApplyVoiceEmphasis(outputPath, filteredOutputPath);
+                // filter.ApplyVoiceEmphasis(outputPath, filteredOutputPath);
+                try
+                {
+                    filter.ApplyDpdfNetVoiceEnhancement(outputPath, filteredOutputPath, settings.DpdfNetModelPath);
+
+                }
+                catch (System.Exception ex)
+                {
+                    Console.WriteLine($"Error applying voice enhancement: {ex.Message}");
+                    break;
+                }
                 File.Copy(filteredOutputPath, outputPath, overwrite: true); // Replace original file with filtered file 
                 File.Delete(filteredOutputPath); // Clean up the intermediate filtered file
             }

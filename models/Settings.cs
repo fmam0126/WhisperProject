@@ -13,5 +13,6 @@ public sealed class Settings
     public required string WhisperModel { get; set; } = string.Empty;
     public string WhisperLanguage { get; set; } = null!;
     public bool ApplyVoiceEmphasisFilter { get; set; } = false;
+    public string DpdfNetModelPath { get; set; } = string.Empty;
     public bool UseVoiceActivityDetection { get; set; } = false;
 }
