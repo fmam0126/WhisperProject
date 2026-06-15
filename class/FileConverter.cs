@@ -1,5 +1,8 @@
 using System.IO;
 using FFMpegCore;
+using FFMpegCore.Enums;
+
+namespace WhisperProject.Class;
 
 class FileConvert
 {
@@ -60,6 +63,8 @@ class FileConvert
         await FFMpegArguments
         .FromFileInput(inputPath)
         .OutputToFile(outputPath, overwrite: true, options => options
+            .WithAudioCodec("pcm_s16le")
+            .WithCustomArgument("-ac 1") // Mono channel
             .WithAudioSamplingRate(16000)
             .ForceFormat("wav"))
             .ProcessAsynchronously();

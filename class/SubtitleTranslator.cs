@@ -6,6 +6,8 @@ using System.Collections.Concurrent;
 using Polly;
 using Polly.Retry;
 
+namespace WhisperProject.Class;
+
 public class SubtitleTranslator
 {
 
@@ -15,15 +17,20 @@ public class SubtitleTranslator
     public string Model { get; set; } = string.Empty;
     public string TargetLanguage { get; set; } = string.Empty;
     public string ApiKey { get; set; } = string.Empty;
-    public uint Concurrency { get; set; }
-
-    public async Task TranslateSrtAsync(string srtFileName)
+    public uint Concurrency { get; set; } = 4;
+    /// <summary>
+    /// this async task translates the srt file to targeted language and then writes it to a srt file one directory up from the srt file, it uses a semaphore to limit concurrency to 4 and Polly to add retry and timeout policies to the translation API calls
+    /// </summary>
+    /// <param name="srtFileName">input srt file name to translate</param>
+    /// <param name="outputPath">output path for the translated srt file</param>
+    /// <returns></returns>
+    public async Task TranslateSrtAsync(string srtFileName, string outputPath)
     {
         // This section reads the SRT file and translates the text using a translation API (e.g., Google Translate API).
         // You can implement the translation logic here using your preferred translation service.
         // For demonstration purposes, we will just print the original text and the target language.
 
-        var semaphore = new SemaphoreSlim(4); // Limit Concurrency to 4
+        var semaphore = new SemaphoreSlim((int)Concurrency); // Limit Concurrency to 4
 
 
         using (FileStream fileStream = File.OpenRead(srtFileName))
@@ -48,7 +55,7 @@ public class SubtitleTranslator
                         }
 
                     }) // Add retry 
-                    .AddTimeout(TimeSpan.FromSeconds(30)) // Add 10 seconds timeout
+                    .AddTimeout(TimeSpan.FromMinutes(2)) // Add 2 minute timeout
                     .Build(); // Builds the resilience pipeline
 
 
@@ -58,7 +65,7 @@ public class SubtitleTranslator
                 lines = result.Subtitles.SelectMany(d => d.Lines).ToList();
                 startTimes = result.Subtitles.Select(d => d.StartTime).ToList();
                 endTimes = result.Subtitles.Select(d => d.EndTime).ToList();
-                using var writer = new StreamWriter($"{Path.GetDirectoryName(Path.GetDirectoryName(srtFileName))}\\{Path.GetFileNameWithoutExtension(srtFileName)}.{TargetLanguage.ToUpper()}.srt");
+                using var writer = new StreamWriter($"{outputPath}\\{Path.GetFileNameWithoutExtension(srtFileName)}.{TargetLanguage.ToUpper()}.srt");
 
 
                 var translatedLines = new ConcurrentBag<(int Index, string Data)>();
@@ -67,7 +74,7 @@ public class SubtitleTranslator
                     await semaphore.WaitAsync();
                     try
                     {
-                        string processedText = await pipeline.ExecuteAsync(async token => { return await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), UrlBuilder(Url)); });
+                        string processedText = await pipeline.ExecuteAsync(async token => { return await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), UrlBuilder(Url), token); });
                         translatedLines.Add((index, processedText));
                         Console.WriteLine(processedText.Trim().ReplaceLineEndings(string.Empty));
                         await Task.Delay(50);
@@ -111,8 +118,9 @@ public class SubtitleTranslator
     /// this async task translates the srt file to targeted language and then writes it to a srt file one directory up from the srt file
     /// </summary>
     /// <param name="srtFileName">srt file to translate</param>
+    /// <param name="outputPath">output path for the translated srt file</param>
     /// <returns></returns>
-    public async Task TranslateSrtParalellTask(string srtFileName)
+    public async Task TranslateSrtParalellTask(string srtFileName, string outputPath)
     {
         using (FileStream fileStream = File.OpenRead(srtFileName))
         {
@@ -131,19 +139,19 @@ public class SubtitleTranslator
                 lines = result.Subtitles.SelectMany(d => d.Lines).ToList();
                 startTimes = result.Subtitles.Select(d => d.StartTime).ToList();
                 endTimes = result.Subtitles.Select(d => d.EndTime).ToList();
-                using var writer = new StreamWriter($"{Path.GetDirectoryName(Path.GetDirectoryName(srtFileName))}\\{Path.GetFileNameWithoutExtension(srtFileName)}.{TargetLanguage.ToUpper()}.srt");
+                using var writer = new StreamWriter($"{outputPath}\\{Path.GetFileNameWithoutExtension(srtFileName)}.{TargetLanguage.ToUpper()}.srt");
 
 
                 // var translatedLines = new ConcurrentBag<(int Index, string Data)>();
                 var translatedLines = new List<string>();
 
                 var options = new ParallelOptions { MaxDegreeOfParallelism = 4 }; // limit concurrency to 4 
-                await Parallel.ForEachAsync(lines, options, async (line, CancellationToken) =>
+                await Parallel.ForEachAsync(lines, options, async (line, cancellationToken) =>
                 {
                     string processedText;
                     try
                     {
-                        processedText = await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), UrlBuilder(Url));
+                        processedText = await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), UrlBuilder(Url), cancellationToken);
 
                     }
                     catch (System.Exception)
@@ -242,9 +250,10 @@ public class SubtitleTranslator
     {
         return $"Please Translate the following text from {language} to {TargetLanguage} without adding comments. just output translated text: \n{Prompt}";
     }
-    private async Task<string> SendToLLMAsync(string Prompt, string url)
+    private async Task<string> SendToLLMAsync(string Prompt, string url, CancellationToken cancellationToken = default)
     {
         HttpClient httpClient = new HttpClient();
+        httpClient.Timeout = System.Threading.Timeout.InfiniteTimeSpan;
 
         var messages = new List<object>();
         messages.Add(new { role = "user", content = Prompt });
@@ -256,12 +265,12 @@ public class SubtitleTranslator
         };
         var json = JsonSerializer.Serialize(payload);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
-        using var response = await httpClient.PostAsync(url, content);
-        if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
-        {
-            Console.WriteLine($"{response.Headers} {response.Content} {response}");
+        using var response = await httpClient.PostAsync(url, content, cancellationToken);
+        // if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
+        // {
+        //     Console.WriteLine($"{response.Headers} {response.Content} {response}");
 
-        }
+        // }
         response.EnsureSuccessStatusCode();
 
         var responseText = await response.Content.ReadAsStringAsync();

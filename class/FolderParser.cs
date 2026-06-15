@@ -1,3 +1,4 @@
+namespace WhisperProject.Class;
 
 class FolderParser
 {

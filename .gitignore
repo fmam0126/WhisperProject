@@ -3,11 +3,11 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
+*.onnx
 ggml*.bin
 appsettings.json
 # dotenv files
 .env
-
 # User-specific files
 *.rsuser
 *.suo

@@ -23,3 +23,7 @@
 - comment code better
 
 - add usage of args to remove readlines - added appsettings.json
+
+Vad is working. - add toggle and expose settings.
+
+add Voice emphasis filter - NAUDIO

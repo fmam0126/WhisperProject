@@ -1,5 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
 using System.Security;
+using System.Security.Cryptography.X509Certificates;
+using WhisperProject.Class;
+using WhisperProject.Models;
 
 namespace WhisperProject;
 
@@ -55,44 +58,93 @@ class Program
         foreach (var item in sourceFiles)
         {
             string outputPath;
+
             Console.WriteLine(Path.GetExtension(item));
-            if (Path.GetExtension(item) != ".wav")
+
+            outputPath = await fileConvert.ConvertToWav(item);
+
+            // Apply voice emphasis filter if enabled in settings
+            // redo with better filter
+            if (settings.ApplyDpdfNet)
             {
-                outputPath = await fileConvert.ConvertToWav(item);
+                Console.WriteLine("Applying DpdfNet voice enhancement...");
+                VoiceEmphasisFilter filter = new VoiceEmphasisFilter();
+
+                string filteredOutputPath = Path.Combine(Path.GetDirectoryName(outputPath) ?? string.Empty, $"{Path.GetFileNameWithoutExtension(outputPath)}.filtered.wav");
+
+                // filter.ApplyVoiceEmphasis(outputPath, filteredOutputPath);
+                try
+                {
+                    await filter.ApplyDpdfNetVoiceEnhancement(outputPath, filteredOutputPath, settings.DpdfNetModelPath, settings.DpdfNetDownloadUrl);
+
+                }
+                catch (System.Exception ex)
+                {
+                    Console.WriteLine($"Error applying voice enhancement: {ex.Message}");
+                    break;
+                }
+                File.Copy(filteredOutputPath, outputPath, overwrite: true); // Replace original file with filtered file 
+                File.Delete(filteredOutputPath); // Clean up the intermediate filtered file
             }
-            else
-            {
-                outputPath = item;
-            }
-            Console.WriteLine($"sending {Path.GetFileName(outputPath)} to Whisper");
+
+            // transcribe the file and save the srt in the same directory as the original file
+            Console.WriteLine($"sending {Path.GetFileName(item)} to Whisper");
             try
             {
-
-                // string? transcription = await whisperClient.TranscribeAsync("whisper-v3", "DUMMY", outputPath);
-                await WhisperClient.TranscribeAsync(outputPath, language: settings.WhisperLanguage, modelPath: settings.WhisperModelpath);
+                if (settings.UseVoiceActivityDetection)
+                {
+                    await WhisperClient.TranscribeVadAsync(outputPath, modelPath: settings.WhisperModelpath, language: settings.WhisperLanguage);
+                }
+                else
+                {
+                    await WhisperClient.TranscribeAsync(outputPath, language: settings.WhisperLanguage, modelPath: settings.WhisperModelpath);
+                }
                 Console.WriteLine(Path.GetDirectoryName(outputPath));
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error: {ex.Message}");
+                Console.WriteLine($"Error processing {Path.GetFileName(item)}: {ex}");
+                continue;
             }
 
-            Console.WriteLine($"Finished processing {Path.GetFileName(outputPath)}");
+            Console.WriteLine($"Finished processing {Path.GetFileName(item)}");
             Console.WriteLine("--------------------------------------------------");
             Console.WriteLine("Tranlating subtitles...");
-            SubtitleTranslator subtitleTranslator = new SubtitleTranslator
+            try
             {
-                Url = settings.Url,
-                Port = settings.Port,
-                TargetLanguage = settings.TargetLanguage,
-                ApiKey = settings.ApiKey,
-                GptPath = settings.GptPath,
-                Model = settings.GptModel
-            };
-            string srtFileName = $"{Path.GetDirectoryName(outputPath)}\\{Path.GetFileNameWithoutExtension(outputPath)}.srt";
-            await subtitleTranslator.TranslateSrtAsync(srtFileName);
-            Console.WriteLine($"Finished Translating {Path.GetFileName(outputPath)}");
-            File.Delete(outputPath);
+                SubtitleTranslator subtitleTranslator = new SubtitleTranslator
+                {
+                    Url = settings.Url,
+                    Port = settings.Port,
+                    TargetLanguage = settings.TargetLanguage,
+                    ApiKey = settings.ApiKey,
+                    GptPath = settings.GptPath,
+                    Model = settings.GptModel
+                };
+                string srtFileName = $"{Path.GetDirectoryName(outputPath)}\\{Path.GetFileNameWithoutExtension(outputPath)}.srt";
+                await subtitleTranslator.TranslateSrtAsync(srtFileName, Path.GetDirectoryName(item) ?? outputPath);
+                Console.WriteLine($"Finished Translating {Path.GetFileName(item)}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Translation error for {Path.GetFileName(item)}: {ex}");
+            }
+
+            // Clean up temporary files
+            try
+            {
+                string srtFileName = $"{Path.GetDirectoryName(outputPath)}\\{Path.GetFileNameWithoutExtension(outputPath)}.srt";
+                if (File.Exists(srtFileName)) File.Delete(srtFileName);
+                if (File.Exists(outputPath)) File.Delete(outputPath);
+                if (!Directory.EnumerateFileSystemEntries(Path.GetDirectoryName(outputPath) ?? string.Empty).Any())
+                {
+                    Directory.Delete(Path.GetDirectoryName(outputPath) ?? string.Empty);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Cleanup error for {Path.GetFileName(item)}: {ex.Message}");
+            }
 
         }
 
