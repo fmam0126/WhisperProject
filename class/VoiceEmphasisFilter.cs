@@ -70,14 +70,15 @@ public class VoiceEmphasisFilter
     /// <param name="inputFilePath">input file path</param>
     /// <param name="outputFilePath">output file path</param>
     /// <param name="modelPath">path to the voice enhancement onnx model</param>
-    public async Task ApplyDpdfNetVoiceEnhancement(string inputFilePath, string outputFilePath, string modelPath)
+    /// <param name="modelDownloadUrl">URL to download the DPDFNet model</param>
+    public async Task ApplyDpdfNetVoiceEnhancement(string inputFilePath, string outputFilePath, string modelPath, string modelDownloadUrl)
     {
         if (!File.Exists(modelPath))
         {
             Console.WriteLine($"DPDFNet model not found at {modelPath}.");
             try
             {
-                await DownloadDpdfNetModel(modelPath);
+                await DownloadDpdfNetModel(modelPath, modelDownloadUrl);
             }
             catch (Exception ex)
             {
@@ -106,7 +107,7 @@ public class VoiceEmphasisFilter
             Console.WriteLine($"failed to save denoised audio to {outputFilePath}");
         }
     }
-    private static async Task DownloadDpdfNetModel(string modelPath)
+    private static async Task DownloadDpdfNetModel(string modelPath, string modelDownloadUrl)
     {
         if (File.Exists(modelPath))
         {
@@ -116,7 +117,7 @@ public class VoiceEmphasisFilter
 
         Console.WriteLine($"Downloading DPDFNet model to {modelPath} ...");
         using var httpClient = new HttpClient();
-        var modelUrl = "https://github.com/k2-fsa/sherpa-onnx/releases/download/speech-enhancement-models/dpdfnet8.onnx";
+        var modelUrl = modelDownloadUrl;
         var response = await httpClient.GetAsync(modelUrl);
         response.EnsureSuccessStatusCode();
         await File.WriteAllBytesAsync(modelPath, await response.Content.ReadAsByteArrayAsync());

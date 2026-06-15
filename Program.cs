@@ -65,9 +65,9 @@ class Program
 
             // Apply voice emphasis filter if enabled in settings
             // redo with better filter
-            if (settings.ApplyVoiceEmphasisFilter)
+            if (settings.ApplyDpdfNet)
             {
-                Console.WriteLine("Applying voice emphasis filter...");
+                Console.WriteLine("Applying DpdfNet voice enhancement...");
                 VoiceEmphasisFilter filter = new VoiceEmphasisFilter();
 
                 string filteredOutputPath = Path.Combine(Path.GetDirectoryName(outputPath) ?? string.Empty, $"{Path.GetFileNameWithoutExtension(outputPath)}.filtered.wav");
@@ -75,7 +75,7 @@ class Program
                 // filter.ApplyVoiceEmphasis(outputPath, filteredOutputPath);
                 try
                 {
-                    await filter.ApplyDpdfNetVoiceEnhancement(outputPath, filteredOutputPath, settings.DpdfNetModelPath);
+                    await filter.ApplyDpdfNetVoiceEnhancement(outputPath, filteredOutputPath, settings.DpdfNetModelPath, settings.DpdfNetDownloadUrl);
 
                 }
                 catch (System.Exception ex)
