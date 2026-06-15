@@ -69,5 +69,4 @@ Create an `appsettings.json` file in the project root with the following structu
 2. Create an `appsettings.json` file based on the example above.
 3. Ensure FFmpeg is installed and available in the system PATH.
 4. Obtain a Whisper model file and update `WhisperModelpath` in the settings.
-5. (Optional) Obtain a DpdfNet ONNX model if you want to use voice enhancement.
-6. Run the project to process files in the input folder.
+5. Run the project to process files in the input folder.
