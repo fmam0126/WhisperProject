@@ -27,3 +27,8 @@
 Vad is working. - add toggle and expose settings.
 
 add Voice emphasis filter - NAUDIO
+
+Redo Translation for better use of llm and context.
+https://github.com/microsoft/semantic-kernel
+https://github.com/microsoft/agent-framework
+https://github.com/openai/openai-dotnet
