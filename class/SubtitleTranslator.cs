@@ -1,10 +1,14 @@
+using System.ClientModel;
 using System.Text;
-using System.Text.Json;
 using SubtitlesParserV2;
 using SubtitlesParserV2.Models;
 using System.Collections.Concurrent;
+using Microsoft.Agents.AI;
+using OpenAI;
+using OpenAI.Chat;
 using Polly;
 using Polly.Retry;
+using Microsoft.Extensions.AI;
 
 namespace WhisperProject.Class;
 
@@ -18,6 +22,33 @@ public class SubtitleTranslator
     public string TargetLanguage { get; set; } = string.Empty;
     public string ApiKey { get; set; } = string.Empty;
     public uint Concurrency { get; set; } = 4;
+    public string SystemPrompt { get; set; } = "You are a helpful assistant for translating video subtitles. You receive text in the format of a subtitle file and you translate it to the target language without adding any comments or explanations, just output the translated text. Always keep the formatting of the original text.";
+
+    private AIAgent? _agent;
+
+    /// <summary>
+    /// Lazily creates or returns a configured <see cref="AIAgent"/> backed by an
+    /// OpenAI-compatible endpoint (works with local LLMs like Ollama, LM Studio, llama.cpp, etc.).
+    /// </summary>
+    private AIAgent GetOrCreateAgent()
+    {
+        if (_agent is not null)
+            return _agent;
+
+        var endpointUri = BuildEndpointUri();
+        var clientOptions = new OpenAIClientOptions { Endpoint = endpointUri };
+
+        var openAIClient = new OpenAIClient(
+            new ApiKeyCredential(string.IsNullOrWhiteSpace(ApiKey) ? "not-needed" : ApiKey),
+            clientOptions);
+
+        var chatClient = openAIClient.GetChatClient(
+            string.IsNullOrWhiteSpace(Model) ? string.Empty : Model);
+
+        _agent = chatClient.AsAIAgent(instructions: SystemPrompt);
+        return _agent;
+    }
+
     /// <summary>
     /// this async task translates the srt file to targeted language and then writes it to a srt file one directory up from the srt file, it uses a semaphore to limit concurrency to 4 and Polly to add retry and timeout policies to the translation API calls
     /// </summary>
@@ -74,7 +105,7 @@ public class SubtitleTranslator
                     await semaphore.WaitAsync();
                     try
                     {
-                        string processedText = await pipeline.ExecuteAsync(async token => { return await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), UrlBuilder(Url), token); });
+                        string processedText = await pipeline.ExecuteAsync(async token => { return await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), string.Empty, token); });
                         translatedLines.Add((index, processedText));
                         Console.WriteLine(processedText.Trim().ReplaceLineEndings(string.Empty));
                         await Task.Delay(50);
@@ -151,7 +182,7 @@ public class SubtitleTranslator
                     string processedText;
                     try
                     {
-                        processedText = await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), UrlBuilder(Url), cancellationToken);
+                        processedText = await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), string.Empty, cancellationToken);
 
                     }
                     catch (System.Exception)
@@ -224,27 +255,35 @@ public class SubtitleTranslator
             return text;
         }
     }
-    private string UrlBuilder(string baseurl)
+    /// <summary>
+    /// Builds the OpenAI-compatible base endpoint URI from the configured properties.
+    /// The <see cref="GptPath"/> is used as the API base path (e.g. "/v1").
+    /// If <see cref="GptPath"/> includes a "/chat/completions" suffix it is stripped since
+    /// the OpenAI SDK appends it automatically.
+    /// </summary>
+    private Uri BuildEndpointUri()
     {
-        if (baseurl == null)
-            throw new InvalidOperationException("Translate config not set.");
-
-        // Build full URL with endpoint, optional port, and path
-        string baseEndpoint = Url?.Trim() ?? "http://127.0.0.1";
-        Uri? baseUri;
-        if (!Uri.TryCreate(baseEndpoint, UriKind.Absolute, out baseUri))
+        string baseEndpoint = (Url ?? "http://127.0.0.1").Trim();
+        if (!Uri.TryCreate(baseEndpoint, UriKind.Absolute, out var baseUri))
         {
-            // try adding scheme
-            if (Uri.TryCreate("http://" + baseEndpoint, UriKind.Absolute, out baseUri) == false)
+            if (!Uri.TryCreate("http://" + baseEndpoint, UriKind.Absolute, out baseUri))
                 throw new InvalidOperationException("Invalid endpoint URL.");
         }
 
         var builder = new UriBuilder(baseUri);
         if (Port > 0)
             builder.Port = Port;
-        builder.Path = (GptPath ?? builder.Path ?? string.Empty).TrimStart('/');
-        var url = builder.Uri.ToString();
-        return url;
+
+        // Use GptPath as the API base path. Strip /chat/completions suffix
+        // because the OpenAI SDK appends it automatically.
+        var path = (GptPath ?? string.Empty).Trim('/');
+        if (path.EndsWith("chat/completions", StringComparison.OrdinalIgnoreCase))
+            path = path[..^"chat/completions".Length].Trim('/');
+
+        if (!string.IsNullOrWhiteSpace(path))
+            builder.Path = path;
+
+        return builder.Uri;
     }
     private string PromptBuilder(string Prompt, string language, string TargetLanguage)
     {
@@ -252,66 +291,19 @@ public class SubtitleTranslator
     }
     private async Task<string> SendToLLMAsync(string Prompt, string url, CancellationToken cancellationToken = default)
     {
-        HttpClient httpClient = new HttpClient();
-        httpClient.Timeout = System.Threading.Timeout.InfiniteTimeSpan;
-
-        var messages = new List<object>();
-        messages.Add(new { role = "user", content = Prompt });
-        var payload = new Dictionary<string, object>
-        {
-            { "model", string.IsNullOrWhiteSpace(Model) ? "" : Model},
-            { "messages", messages}
-
-        };
-        var json = JsonSerializer.Serialize(payload);
-        using var content = new StringContent(json, Encoding.UTF8, "application/json");
-        using var response = await httpClient.PostAsync(url, content, cancellationToken);
-        // if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
-        // {
-        //     Console.WriteLine($"{response.Headers} {response.Content} {response}");
-
-        // }
-        response.EnsureSuccessStatusCode();
-
-        var responseText = await response.Content.ReadAsStringAsync();
+        var agent = GetOrCreateAgent();
 
         try
         {
-            using var document = JsonDocument.Parse(responseText);
-            var rootElement = document.RootElement;
-            if (rootElement.TryGetProperty("choices", out var choices) && choices.ValueKind == JsonValueKind.Array && choices.GetArrayLength() > 0)
-            {
-                var first = choices[0];
-                if (first.TryGetProperty("message", out var message) && message.TryGetProperty("content", out var contentElement))
-                {
-                    var result = contentElement.GetString();
-                    return RemoveReasoning(result ?? string.Empty);
-                }
-                if (first.TryGetProperty("text", out var textElement))
-                {
-                    var result = textElement.GetString();
-                    return RemoveReasoning(result ?? string.Empty);
-                }
-            }
-
-            if (rootElement.TryGetProperty("text", out var text))
-            {
-                var result = text.GetString();
-                return RemoveReasoning(result ?? string.Empty);
-            }
-            if (rootElement.TryGetProperty("result", out var resultElement))
-            {
-                var result = resultElement.GetString();
-                return RemoveReasoning(result ?? string.Empty);
-            }
-            Console.WriteLine($"WARNING: Could not parse Response. response length {responseText.Length}");
-            return responseText;
+            // RunAsync(string) sends the prompt as a user message and returns AgentResponse.
+            AgentResponse response = await agent.RunAsync(Prompt, cancellationToken: cancellationToken);
+            string result = response.ToString() ?? string.Empty;
+            return RemoveReasoning(result);
         }
-        catch (Exception parseEx)
+        catch (Exception ex)
         {
-            Console.WriteLine($"Error parsing API response: {parseEx.Message}. Response length: {responseText.Length}");
-            return responseText;
+            Console.WriteLine($"Agent call failed: {ex.Message}");
+            throw;
         }
-
     }
 }
