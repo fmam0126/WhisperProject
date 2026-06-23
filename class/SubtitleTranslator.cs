@@ -66,7 +66,11 @@ public class SubtitleTranslator
             return _agent;
 
         var endpointUri = BuildEndpointUri();
-        var clientOptions = new OpenAIClientOptions { Endpoint = endpointUri };
+        var clientOptions = new OpenAIClientOptions
+        {
+            Endpoint = endpointUri,
+            NetworkTimeout = TimeSpan.FromMinutes(6) // Override the default 100s timeout
+        };
 
         var openAIClient = new OpenAIClient(
             new ApiKeyCredential(string.IsNullOrWhiteSpace(ApiKey) ? "not-needed" : ApiKey),
@@ -112,7 +116,7 @@ public class SubtitleTranslator
                         }
 
                     }) // Add retry 
-                    .AddTimeout(TimeSpan.FromMinutes(2)) // Add 2 minute timeout
+                    .AddTimeout(TimeSpan.FromMinutes(5)) // Add 5 minute timeout
                     .Build(); // Builds the resilience pipeline
 
 
@@ -307,7 +311,7 @@ public class SubtitleTranslator
                     return default;
                 }
             })
-            .AddTimeout(TimeSpan.FromMinutes(2))
+            .AddTimeout(TimeSpan.FromMinutes(5))
             .Build();
 
         // ConcurrentBag to collect results in order
