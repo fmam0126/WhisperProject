@@ -48,7 +48,18 @@ class Program
             return;
         }
 
-
+        SubtitleTranslator subtitleTranslator = new SubtitleTranslator
+        {
+            Url = settings.Url,
+            Port = settings.Port,
+            TargetLanguage = settings.TargetLanguage,
+            ApiKey = settings.ApiKey,
+            GptPath = settings.GptPath,
+            Model = settings.GptModel,
+            Concurrency = settings.Concurrency,
+            ContextSize = settings.ContextSize,
+            SystemPrompt = settings.SystemPrompt
+        };
 
 
         List<string> sourceFiles;
@@ -112,17 +123,16 @@ class Program
             Console.WriteLine("Tranlating subtitles...");
             try
             {
-                SubtitleTranslator subtitleTranslator = new SubtitleTranslator
-                {
-                    Url = settings.Url,
-                    Port = settings.Port,
-                    TargetLanguage = settings.TargetLanguage,
-                    ApiKey = settings.ApiKey,
-                    GptPath = settings.GptPath,
-                    Model = settings.GptModel
-                };
                 string srtFileName = $"{Path.GetDirectoryName(outputPath)}\\{Path.GetFileNameWithoutExtension(outputPath)}.srt";
-                await subtitleTranslator.TranslateSrtAsync(srtFileName, Path.GetDirectoryName(item) ?? outputPath);
+                switch (settings.UseContextTranslation)
+                {
+                    case true:
+                        await subtitleTranslator.TranslateSrtWithContextAsync(srtFileName, Path.GetDirectoryName(item) ?? outputPath);
+                        break;
+                    case false:
+                        await subtitleTranslator.TranslateSrtAsync(srtFileName, Path.GetDirectoryName(item) ?? outputPath);
+                        break;
+                }
                 Console.WriteLine($"Finished Translating {Path.GetFileName(item)}");
             }
             catch (Exception ex)
