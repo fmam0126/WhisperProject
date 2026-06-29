@@ -84,7 +84,8 @@ public class SubtitleTranslator
     }
 
     /// <summary>
-    /// this async task translates the srt file to targeted language and then writes it to a srt file one directory up from the srt file, it uses a semaphore to limit concurrency to 4 and Polly to add retry and timeout policies to the translation API calls
+    /// this async task translates the srt file to targeted language and then writes it to a srt file one directory up from the srt file, 
+    /// it uses a semaphore to limit concurrency to 4 and Polly to add retry and timeout policies to the translation API calls
     /// </summary>
     /// <param name="srtFileName">input srt file name to translate</param>
     /// <param name="outputPath">output path for the translated srt file</param>
