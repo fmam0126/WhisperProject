@@ -10,15 +10,6 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        // var input = args[0];
-        // Console.WriteLine(input);
-        // Console.WriteLine("Input a path to a folder:");
-        // string? readResult = Console.ReadLine();
-        // if (readResult == null)
-        // {
-        //     throw new Exception("Filepath cannot be null");
-        // }
-
         // Build a Config object to read from appsettings.json and environment variables
         IConfigurationRoot config;
         try
@@ -146,6 +137,7 @@ class Program
                 string srtFileName = $"{Path.GetDirectoryName(outputPath)}\\{Path.GetFileNameWithoutExtension(outputPath)}.srt";
                 if (File.Exists(srtFileName)) File.Delete(srtFileName);
                 if (File.Exists(outputPath)) File.Delete(outputPath);
+                // if the directory is empty after deleting the files, delete the directory as well
                 if (!Directory.EnumerateFileSystemEntries(Path.GetDirectoryName(outputPath) ?? string.Empty).Any())
                 {
                     Directory.Delete(Path.GetDirectoryName(outputPath) ?? string.Empty);
