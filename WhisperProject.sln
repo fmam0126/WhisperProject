@@ -2,7 +2,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.7.11919.86 stable
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhisperProject", "WhisperProject.Core\WhisperProject.csproj", "{6EDCBA4E-CD9A-0689-08AF-5751D7B64573}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhisperProject.Core", "WhisperProject.Core\WhisperProject.Core.csproj", "{6EDCBA4E-CD9A-0689-08AF-5751D7B64573}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhisperProject.Avalonia", "WhisperProject.Avalonia\WhisperProject.Avalonia.csproj", "{89C540A0-1F6C-495B-B729-F7C510DFB56E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -14,6 +16,10 @@ Global
 		{6EDCBA4E-CD9A-0689-08AF-5751D7B64573}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6EDCBA4E-CD9A-0689-08AF-5751D7B64573}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6EDCBA4E-CD9A-0689-08AF-5751D7B64573}.Release|Any CPU.Build.0 = Release|Any CPU
+		{89C540A0-1F6C-495B-B729-F7C510DFB56E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{89C540A0-1F6C-495B-B729-F7C510DFB56E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89C540A0-1F6C-495B-B729-F7C510DFB56E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89C540A0-1F6C-495B-B729-F7C510DFB56E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
