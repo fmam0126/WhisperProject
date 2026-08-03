@@ -303,7 +303,7 @@ public static class WhisperClient
     /// <param name="processedTimeTicks">The processed time in ticks</param>
     /// <param name="mappingTable">The mapping table</param>
     /// <returns>The original time in ticks</returns>
-    private static TimeSpan MapToOriginalTime(long processedTimeTicks, List<VadTimeMapping> mappingTable)
+    internal static TimeSpan MapToOriginalTime(long processedTimeTicks, List<VadTimeMapping> mappingTable)
     {
         if (mappingTable.Count == 0)
             return TimeSpan.FromTicks(processedTimeTicks);
@@ -345,7 +345,7 @@ public static class WhisperClient
         return TimeSpan.FromTicks(origTicks);
     }
 
-    private record VadTimeMapping(long ProcessedTimeTicks, long OriginalTimeTicks)
+    internal record VadTimeMapping(long ProcessedTimeTicks, long OriginalTimeTicks)
     {
         public static readonly IComparer<VadTimeMapping> ProcessedTimeComparer =
             Comparer<VadTimeMapping>.Create((a, b) => a.ProcessedTimeTicks.CompareTo(b.ProcessedTimeTicks));

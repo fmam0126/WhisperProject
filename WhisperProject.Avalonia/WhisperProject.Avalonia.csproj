@@ -21,4 +21,8 @@
   <ItemGroup>
     <ProjectReference Include="..\WhisperProject.Core\WhisperProject.Core.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="WhisperProject.Tests" />
+  </ItemGroup>
 </Project>

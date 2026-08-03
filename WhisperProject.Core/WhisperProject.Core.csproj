@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -22,5 +22,8 @@
   <PackageReference Include="Whisper.net.AllRuntimes" Version="1.9.1" />
 </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="WhisperProject.Tests" />
+  </ItemGroup>
 
 </Project>

@@ -427,7 +427,7 @@ public class SubtitleTranslator
     /// <param name="response">The LLM response to parse.</param>
     /// <param name="expectedCount">The expected number of translated lines.</param>
     /// <returns>A list of translated lines in the correct order.</returns>
-    private static List<string> ParseNumberedResponse(string response, int expectedCount)
+    internal static List<string> ParseNumberedResponse(string response, int expectedCount)
     {
         var translated = new List<string>();
 
@@ -466,7 +466,7 @@ public class SubtitleTranslator
     /// </summary>
     /// <param name="text">string to remove reasoning tags from</param>
     /// <returns>string without reasoning tags</returns>
-    private string RemoveReasoning(string text)
+    internal string RemoveReasoning(string text)
     {
         if (string.IsNullOrEmpty(text))
             return text;
@@ -487,7 +487,7 @@ public class SubtitleTranslator
     /// If <see cref="GptPath"/> includes a "/chat/completions" suffix it is stripped since
     /// the OpenAI SDK appends it automatically.
     /// </summary>
-    private Uri BuildEndpointUri()
+    internal Uri BuildEndpointUri()
     {
         string baseEndpoint = (Url ?? "http://127.0.0.1").Trim();
         if (!Uri.TryCreate(baseEndpoint, UriKind.Absolute, out var baseUri))
@@ -511,7 +511,7 @@ public class SubtitleTranslator
 
         return builder.Uri;
     }
-    private string PromptBuilder(string Prompt, string language, string TargetLanguage)
+    internal string PromptBuilder(string Prompt, string language, string TargetLanguage)
     {
         return $"Please Translate the following text from {language} to {TargetLanguage} without adding comments. just output translated text: \n{Prompt}";
     }

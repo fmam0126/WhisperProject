@@ -8,8 +8,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhisperProject.Avalonia", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhisperProject.Tests", "WhisperProject.Tests\WhisperProject.Tests.csproj", "{EE0173E1-2954-40BA-8B78-05160978522D}"
 EndProject
-Project("{C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5}") = "WhisperProject.Packaging", "WhisperProject.Packaging\WhisperProject.Packaging.wapproj", "{9DBCA23D-018B-4F70-BA11-442690BAC24E}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -84,36 +82,6 @@ Global
 		{EE0173E1-2954-40BA-8B78-05160978522D}.Release|x64.Build.0 = Release|Any CPU
 		{EE0173E1-2954-40BA-8B78-05160978522D}.Release|x86.ActiveCfg = Release|Any CPU
 		{EE0173E1-2954-40BA-8B78-05160978522D}.Release|x86.Build.0 = Release|Any CPU
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Debug|ARM.ActiveCfg = Debug|ARM
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Debug|ARM.Build.0 = Debug|ARM
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Debug|ARM.Deploy.0 = Debug|ARM
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Debug|ARM64.ActiveCfg = Debug|ARM64
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Debug|ARM64.Build.0 = Debug|ARM64
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Debug|ARM64.Deploy.0 = Debug|ARM64
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Debug|x64.ActiveCfg = Debug|x64
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Debug|x64.Build.0 = Debug|x64
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Debug|x64.Deploy.0 = Debug|x64
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Debug|x86.ActiveCfg = Debug|x86
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Debug|x86.Build.0 = Debug|x86
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Debug|x86.Deploy.0 = Debug|x86
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Release|Any CPU.Deploy.0 = Release|Any CPU
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Release|ARM.ActiveCfg = Release|ARM
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Release|ARM.Build.0 = Release|ARM
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Release|ARM.Deploy.0 = Release|ARM
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Release|ARM64.ActiveCfg = Release|ARM64
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Release|ARM64.Build.0 = Release|ARM64
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Release|ARM64.Deploy.0 = Release|ARM64
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Release|x64.ActiveCfg = Release|x64
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Release|x64.Build.0 = Release|x64
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Release|x64.Deploy.0 = Release|x64
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Release|x86.ActiveCfg = Release|x86
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Release|x86.Build.0 = Release|x86
-		{9DBCA23D-018B-4F70-BA11-442690BAC24E}.Release|x86.Deploy.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
