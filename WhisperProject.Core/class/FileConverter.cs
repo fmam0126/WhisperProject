@@ -10,7 +10,7 @@ public class FileConvert
     public string WorkingPath = string.Empty;
     public FileConvert(string workingPath)
     {
-        WorkingPath = workingPath + "\\temp";
+        WorkingPath = workingPath + "temp";
     }
 
     // TODO: Decide if the method should take an output path as an input

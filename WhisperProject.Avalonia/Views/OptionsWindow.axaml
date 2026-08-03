@@ -6,6 +6,7 @@
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="720"
         x:Class="WhisperProject.Avalonia.Views.OptionsWindow"
         x:DataType="viewModels:OptionsViewModel"
+        Topmost="True"
         Title="Transcription Options"
         Width="620" Height="740"
         WindowStartupLocation="CenterOwner">

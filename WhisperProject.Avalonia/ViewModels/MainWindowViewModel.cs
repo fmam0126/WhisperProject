@@ -31,7 +31,7 @@ public class MainWindowViewModel : ViewModelBase
         };
     }
 
-    // ── Mode selection (radio buttons) ──────────────────────────────────
+    // Mode selection 
 
     private bool _isFileMode = true;
 
@@ -65,7 +65,7 @@ public class MainWindowViewModel : ViewModelBase
         }
     }
 
-    // ── Selected path ───────────────────────────────────────────────────
+    // Selected path 
 
     private string _selectedPath = string.Empty;
 
@@ -78,7 +78,7 @@ public class MainWindowViewModel : ViewModelBase
         set => SetProperty(ref _selectedPath, value);
     }
 
-    // ── Processing state ────────────────────────────────────────────────
+    // Processing state
 
     private bool _isProcessing;
 
@@ -101,7 +101,7 @@ public class MainWindowViewModel : ViewModelBase
     /// </summary>
     public bool CanStart => !IsProcessing && !string.IsNullOrWhiteSpace(SelectedPath);
 
-    // ── Log output ──────────────────────────────────────────────────────
+    //  Log output 
 
     private string _logOutput = string.Empty;
 
@@ -115,7 +115,7 @@ public class MainWindowViewModel : ViewModelBase
         set => SetProperty(ref _logOutput, value);
     }
 
-    // ── Commands — set by the view code-behind to access TopLevel ───────
+    //  Commands — set by the view code-behind to access TopLevel 
     //
     //  StorageProvider (the file/folder picker) requires a TopLevel / Visual
     //  reference. The ViewModel holds the ICommand shape; the code-behind
@@ -145,7 +145,7 @@ public class MainWindowViewModel : ViewModelBase
     /// </summary>
     public ICommand? CancelCommand { get; set; }
 
-    // ── Transcription service ───────────────────────────────────────────
+    //  Transcription service 
 
     private TranscriptionService? _currentService;
 

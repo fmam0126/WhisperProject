@@ -9,7 +9,7 @@ namespace WhisperProject.Avalonia.ViewModels;
 /// </summary>
 public class OptionsViewModel : ViewModelBase
 {
-    // ── API / LLM settings ─────────────────────────────────────────────
+    // API / LLM settings
 
     private string _url = "http://127.0.0.1";
 
@@ -59,7 +59,7 @@ public class OptionsViewModel : ViewModelBase
         set => SetProperty(ref _gptPath, value);
     }
 
-    private string _gptModel = "google/gemma-4-e4b";
+    private string _gptModel = "google/gemma-4-e2b";
 
     /// <summary>
     /// The model name to use for subtitle translation (e.g. "gpt-4o", "llama2-13b-chat").
@@ -70,7 +70,7 @@ public class OptionsViewModel : ViewModelBase
         set => SetProperty(ref _gptModel, value);
     }
 
-    // ── Target language ─────────────────────────────────────────────────
+    // Target language 
 
     private string _targetLanguage = "English";
 
@@ -83,7 +83,7 @@ public class OptionsViewModel : ViewModelBase
         set => SetProperty(ref _targetLanguage, value);
     }
 
-    // ── Whisper settings ─────────────────────────────────────────────────
+    // Whisper settings 
 
     private string _whisperModelPath = string.Empty;
 
@@ -109,7 +109,7 @@ public class OptionsViewModel : ViewModelBase
         set => SetProperty(ref _whisperLanguage, value);
     }
 
-    // ── Concurrency / context ───────────────────────────────────────────
+    // Concurrency / context 
 
     /// <summary>
     /// Maximum number of concurrent translation requests, stored as a string
@@ -137,7 +137,7 @@ public class OptionsViewModel : ViewModelBase
         set => SetProperty(ref _contextSize, value);
     }
 
-    // ── System prompt ───────────────────────────────────────────────────
+    // System prompt 
 
     private string _systemPrompt =
         "You are a helpful assistant for translating video subtitles. " +
@@ -201,7 +201,7 @@ public class OptionsViewModel : ViewModelBase
 
     // ── Voice Activity Detection ────────────────────────────────────────
 
-    private bool _vadEnabled;
+    private bool _vadEnabled = true;
 
     /// <summary>
     /// When true, Voice Activity Detection filters out silence before
@@ -217,7 +217,7 @@ public class OptionsViewModel : ViewModelBase
         }
     }
 
-    private bool _vadDisabled = true;
+    private bool _vadDisabled;
 
     /// <summary>
     /// When true, the entire audio file is processed without silence filtering.

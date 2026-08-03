@@ -24,7 +24,7 @@ public static class WhisperClient
     {
         // We declare three variables which we will use later, ggmlType, modelFileName and wavFileName
         var ggmlType = GgmlType.LargeV2;
-        var modelFileName = modelPath ?? "ggml-largev2.bin";
+        var modelFileName = string.IsNullOrWhiteSpace(modelPath) ? "ggml-largev2.bin" : modelPath;
         // var vadModelFileName = "./ggml-silero-v6.2.0.bin";
         var wavFileName = inputFileName;
 
@@ -117,7 +117,7 @@ public static class WhisperClient
     public static async Task TranscribeVadAsync(string inputFileName, string? modelPath = null, string? language = null)
     {
         var ggmlType = GgmlType.LargeV2;
-        var modelFileName = modelPath ?? "ggml-largev2.bin";
+        var modelFileName = string.IsNullOrWhiteSpace(modelPath) ? "ggml-largev2.bin" : modelPath;
         var vadModelFileName = "./ggml-silero-v6.2.0.bin";
         var sileroVadType = SileroVadType.V6_2_0;
         var wavFileName = inputFileName;
@@ -335,6 +335,8 @@ public static class WhisperClient
 
     private static async Task DownloadModel(string fileName, GgmlType ggmlType)
     {
+        if (string.IsNullOrWhiteSpace(fileName))
+            throw new ArgumentException("Model file name must not be empty.", nameof(fileName));
         Console.WriteLine($"Downloading Model {fileName}");
         using var modelStream = await WhisperGgmlDownloader.Default.GetGgmlModelAsync(ggmlType);
         using var fileWriter = File.OpenWrite(fileName);
@@ -342,6 +344,8 @@ public static class WhisperClient
     }
     private static async Task DownloadVadModel(string fileName, SileroVadType vadType)
     {
+        if (string.IsNullOrWhiteSpace(fileName))
+            throw new ArgumentException("VAD model file name must not be empty.", nameof(fileName));
         Console.WriteLine($"Downloading VAD Model {fileName}");
         using var modelStream = await WhisperGgmlDownloader.Default.GetGgmlSileroVadModelAsync(vadType);
         using var fileWriter = File.OpenWrite(fileName);
