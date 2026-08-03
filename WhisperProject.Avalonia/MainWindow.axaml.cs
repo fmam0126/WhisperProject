@@ -16,39 +16,43 @@ namespace WhisperProject.Avalonia;
 
 public partial class MainWindow : Window
 {
-    private readonly OptionsViewModel _optionsVm;
+    private readonly OptionsViewModel _optionsViewModel;
 
     public MainWindow()
     {
         InitializeComponent();
 
-        // ── Load settings from appsettings.json if present ─────────
-        _optionsVm = LoadSettingsOrDefaults();
+        // Load settings from appsettings.json if present
+        _optionsViewModel = LoadSettingsOrDefaults();
 
-        var mainVm = new MainWindowViewModel(_optionsVm);
-        DataContext = mainVm;
+        var mainViewModel = new MainWindowViewModel(_optionsViewModel);
+        DataContext = mainViewModel;
 
-        // ── Wire commands to code-behind implementations ───────────
-        mainVm.BrowseCommand = new RelayCommand(async () => await BrowseAsync(mainVm));
-        mainVm.OpenOptionsCommand = new RelayCommand(async () => await OpenOptionsAsync());
-        mainVm.StartCommand = new RelayCommand(async () => await mainVm.StartProcessingAsync());
-        mainVm.CancelCommand = new RelayCommand(() => mainVm.CancelProcessing());
+        // Wire commands to code-behind implementations
+        mainViewModel.BrowseCommand = new RelayCommand(async () => await BrowseAsync(mainViewModel));
+        mainViewModel.OpenOptionsCommand = new RelayCommand(async () => await OpenOptionsAsync());
+        mainViewModel.StartCommand = new RelayCommand(async () => await mainViewModel.StartProcessingAsync());
+        mainViewModel.CancelCommand = new RelayCommand(() => mainViewModel.CancelProcessing());
 
-        // ── Wire button clicks ─────────────────────────────────────
-        BrowseButton.Click += async (_, _) => await BrowseAsync(mainVm);
+        // Wire button clicks
+        BrowseButton.Click += async (_, _) => await BrowseAsync(mainViewModel);
         OptionsButton.Click += async (_, _) => await OpenOptionsAsync();
-        StartButton.Click += async (_, _) => await mainVm.StartProcessingAsync();
-        CancelButton.Click += (_, _) => mainVm.CancelProcessing();
+        StartButton.Click += async (_, _) => await mainViewModel.StartProcessingAsync();
+        CancelButton.Click += (_, _) => mainViewModel.CancelProcessing();
     }
 
-    // ── File / Folder Browser ───────────────────────────────────────────
-
-    private async Task BrowseAsync(MainWindowViewModel vm)
+    /// <summary>
+    /// Opens a native file or folder picker dialog based on the current mode
+    /// (file or folder) and updates the <see cref="MainWindowViewModel.SelectedPath"/>
+    /// property with the user's selection.
+    /// </summary>
+    /// <param name="viewModel">The main window view model to update with the chosen path.</param>
+    private async Task BrowseAsync(MainWindowViewModel viewModel)
     {
         var topLevel = GetTopLevel(this);
         if (topLevel is null) return;
 
-        if (vm.IsFileMode)
+        if (viewModel.IsFileMode)
         {
             // Open native file picker filtered to media files
             var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
@@ -68,7 +72,7 @@ public partial class MainWindow : Window
 
             if (files.Count > 0)
             {
-                vm.SelectedPath = files[0].Path.LocalPath;
+                viewModel.SelectedPath = files[0].Path.LocalPath;
             }
         }
         else
@@ -82,18 +86,22 @@ public partial class MainWindow : Window
 
             if (folders.Count > 0)
             {
-                vm.SelectedPath = folders[0].Path.LocalPath;
+                viewModel.SelectedPath = folders[0].Path.LocalPath;
             }
         }
     }
 
-    // ── Options window ──────────────────────────────────────────────────
-
+    /// <summary>
+    /// Opens the Options dialog window, allowing the user to modify transcription
+    /// and translation settings. If the user confirms their changes by clicking OK,
+    /// the live options are updated; otherwise, changes are discarded.
+    /// </summary>
+    /// <returns>A task representing the asynchronous dialog operation.</returns>
     private async Task OpenOptionsAsync()
     {
         // Clone the current options so Cancel doesn't mutate the live object
         var clone = new OptionsViewModel();
-        clone.LoadFromSettings(_optionsVm.ToSettings(string.Empty));
+        clone.LoadFromSettings(_optionsViewModel.ToSettings(string.Empty));
 
         var optionsWindow = new OptionsWindow(clone);
         await optionsWindow.ShowDialog(this);
@@ -101,33 +109,32 @@ public partial class MainWindow : Window
         if (optionsWindow.WasConfirmed)
         {
             // Copy confirmed values back to the live options
-            _optionsVm.LoadFromSettings(clone.ToSettings(string.Empty));
+            _optionsViewModel.LoadFromSettings(clone.ToSettings(string.Empty));
         }
     }
 
-    // ── Settings loader ─────────────────────────────────────────────────
-
     /// <summary>
-    /// Attempts to load settings from appsettings.json next to the
-    /// executable. Falls back to sensible defaults when the file is
-    /// missing or unreadable.
+    /// Attempts to load settings from <c>appsettings.json</c> next to the
+    /// executable. Falls back to sensible defaults when the file is missing,
+    /// malformed, or unreadable.
     /// </summary>
+    /// <returns>A populated <see cref="OptionsViewModel"/> instance.</returns>
     private static OptionsViewModel LoadSettingsOrDefaults()
     {
-        var vm = new OptionsViewModel();
+        var viewModel = new OptionsViewModel();
 
         try
         {
-            var config = new ConfigurationBuilder()
+            var configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: true)
                 .Build();
 
-            var settings = config.GetSection("Settings").Get<Settings>();
+            var settings = configuration.GetSection("Settings").Get<Settings>();
             if (settings is not null)
             {
-                vm.LoadFromSettings(settings);
-                return vm;
+                viewModel.LoadFromSettings(settings);
+                return viewModel;
             }
         }
         catch
@@ -136,29 +143,40 @@ public partial class MainWindow : Window
             // missing or malformed config file.
         }
 
-        return vm; // already has sensible defaults
+        return viewModel; // already has sensible defaults
     }
 }
 
 /// <summary>
-/// Minimal ICommand implementation so the ViewModel doesn't need a
-/// third-party MVVM framework dependency.
+/// Minimal <see cref="System.Windows.Input.ICommand"/> implementation so the
+/// ViewModels don't require a third-party MVVM framework dependency.
 /// </summary>
 internal sealed class RelayCommand : System.Windows.Input.ICommand
 {
     private readonly Action _execute;
     private readonly Func<bool>? _canExecute;
 
+    /// <summary>
+    /// Creates a new relay command.
+    /// </summary>
+    /// <param name="execute">The action to invoke when the command is executed.</param>
+    /// <param name="canExecute">
+    /// Optional predicate that determines whether the command can execute.
+    /// When null the command is always executable.
+    /// </param>
     public RelayCommand(Action execute, Func<bool>? canExecute = null)
     {
         _execute = execute;
         _canExecute = canExecute;
     }
 
+    /// <inheritdoc/>
     public bool CanExecute(object? parameter) => _canExecute?.Invoke() ?? true;
 
+    /// <inheritdoc/>
     public void Execute(object? parameter) => _execute();
 
+    /// <inheritdoc/>
     public event EventHandler? CanExecuteChanged
     {
         add { }

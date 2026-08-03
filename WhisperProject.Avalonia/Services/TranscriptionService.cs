@@ -10,32 +10,45 @@ using WhisperProject.Models;
 namespace WhisperProject.Avalonia.Services;
 
 /// <summary>
-/// Orchestrates the transcription pipeline and reports progress back to the UI.
-/// Handles both single-file and folder (batch) modes.
+/// Orchestrates the full transcription pipeline — media conversion, optional
+/// voice enhancement, Whisper transcription, and LLM-based subtitle translation —
+/// reporting progress back to the UI via events. Handles both single-file and
+/// folder (batch) modes.
 /// </summary>
 public class TranscriptionService
 {
     private readonly Settings _settings;
     private readonly string _inputPath;
     private readonly bool _isFolder;
-    private CancellationTokenSource? _cts;
+    private CancellationTokenSource? _cancellationTokenSource;
 
     /// <summary>
-    /// Raised when a progress message is available (thread-safe — subscribers should
-    /// marshal to the UI thread as needed).
+    /// Raised when a progress message is available. Subscribers should marshal
+    /// to the UI thread as needed — this event may fire from a background thread.
     /// </summary>
     public event Action<string>? ProgressChanged;
 
     /// <summary>
-    /// Raised when processing completes (with a summary message).
+    /// Raised when all processing has completed. The string argument is a
+    /// human-readable summary of successes and failures.
     /// </summary>
     public event Action<string>? ProcessingCompleted;
 
     /// <summary>
-    /// Raised when an individual file fails (file name + error).
+    /// Raised when an individual file fails to process. Arguments are the file
+    /// name and the error message.
     /// </summary>
     public event Action<string, string>? FileFailed;
 
+    /// <summary>
+    /// Creates a new transcription service for the given input.
+    /// </summary>
+    /// <param name="settings">All transcription/translation configuration.</param>
+    /// <param name="inputPath">Path to a single media file or a folder.</param>
+    /// <param name="isFolder">
+    /// True if <paramref name="inputPath"/> is a folder (batch mode);
+    /// false if it is a single file.
+    /// </param>
     public TranscriptionService(Settings settings, string inputPath, bool isFolder)
     {
         _settings = settings;
@@ -44,12 +57,13 @@ public class TranscriptionService
     }
 
     /// <summary>
-    /// Starts the transcription pipeline asynchronously.
+    /// Runs the transcription pipeline asynchronously. Progress is reported
+    /// via <see cref="ProgressChanged"/> throughout.
     /// </summary>
     public async Task ProcessAsync()
     {
-        _cts = new CancellationTokenSource();
-        var token = _cts.Token;
+        _cancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = _cancellationTokenSource.Token;
 
         try
         {
@@ -63,10 +77,12 @@ public class TranscriptionService
             }
             else
             {
-                var ext = Path.GetExtension(_inputPath).ToLowerInvariant();
-                if (ext is not (".mp4" or ".mkv" or ".mp3"))
+                var extension = Path.GetExtension(_inputPath).ToLowerInvariant();
+                if (extension is not (".mp4" or ".mkv" or ".mp3"))
                 {
-                    ReportProgress($"Warning: '{ext}' may not be a supported media type. Attempting anyway.");
+                    ReportProgress(
+                        $"Warning: '{extension}' may not be a supported media type. " +
+                        "Attempting anyway.");
                 }
                 sourceFiles = new List<string> { _inputPath };
             }
@@ -94,21 +110,22 @@ public class TranscriptionService
             int successCount = 0;
             int failCount = 0;
 
-            for (int i = 0; i < sourceFiles.Count; i++)
+            for (int fileIndex = 0; fileIndex < sourceFiles.Count; fileIndex++)
             {
-                if (token.IsCancellationRequested)
+                if (cancellationToken.IsCancellationRequested)
                 {
                     ReportProgress("Processing cancelled by user.");
                     break;
                 }
 
-                var item = sourceFiles[i];
-                var fileName = Path.GetFileName(item);
-                ReportProgress($"[{i + 1}/{sourceFiles.Count}] Processing: {fileName}");
+                var sourceFile = sourceFiles[fileIndex];
+                var fileName = Path.GetFileName(sourceFile);
+                ReportProgress(
+                    $"[{fileIndex + 1}/{sourceFiles.Count}] Processing: {fileName}");
 
                 try
                 {
-                    await ProcessSingleFile(item, subtitleTranslator, token);
+                    await ProcessSingleFile(sourceFile, subtitleTranslator, cancellationToken);
                     successCount++;
                     ReportProgress($"✓ Completed: {fileName}");
                 }
@@ -117,11 +134,11 @@ public class TranscriptionService
                     ReportProgress("Processing cancelled.");
                     break;
                 }
-                catch (Exception ex)
+                catch (Exception exception)
                 {
                     failCount++;
-                    ReportProgress($"✗ Failed: {fileName} — {ex.Message}");
-                    FileFailed?.Invoke(fileName, ex.Message);
+                    ReportProgress($"✗ Failed: {fileName} — {exception.Message}");
+                    FileFailed?.Invoke(fileName, exception.Message);
                 }
             }
 
@@ -131,29 +148,37 @@ public class TranscriptionService
         }
         finally
         {
-            _cts?.Dispose();
-            _cts = null;
+            _cancellationTokenSource?.Dispose();
+            _cancellationTokenSource = null;
         }
     }
 
     /// <summary>
-    /// Cancels the running transcription process.
+    /// Requests cancellation of the running transcription pipeline.
+    /// Processing stops at the next safe checkpoint.
     /// </summary>
     public void Cancel()
     {
-        _cts?.Cancel();
+        _cancellationTokenSource?.Cancel();
     }
 
-    private async Task ProcessSingleFile(string sourceFile, SubtitleTranslator subtitleTranslator, CancellationToken token)
+    /// <summary>
+    /// Processes a single media file through the full pipeline:
+    /// convert → (optional enhance) → transcribe → translate → cleanup.
+    /// </summary>
+    private async Task ProcessSingleFile(
+        string sourceFile,
+        SubtitleTranslator subtitleTranslator,
+        CancellationToken cancellationToken)
     {
         var fileConvert = new FileConvert(_settings.InputPath);
 
-        // Step 1: Convert to WAV
+        // Step 1: Convert media file to 16kHz mono WAV
         ReportProgress($"  Converting to WAV: {Path.GetFileName(sourceFile)}");
         var outputPath = await fileConvert.ConvertToWav(sourceFile);
-        token.ThrowIfCancellationRequested();
+        cancellationToken.ThrowIfCancellationRequested();
 
-        // Step 2: Optional voice enhancement
+        // Step 2: Optional DpdfNet voice enhancement
         if (_settings.ApplyDpdfNet)
         {
             ReportProgress("  Applying DpdfNet voice enhancement...");
@@ -168,10 +193,10 @@ public class TranscriptionService
 
             File.Copy(filteredOutputPath, outputPath, overwrite: true);
             File.Delete(filteredOutputPath);
-            token.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
         }
 
-        // Step 3: Transcribe
+        // Step 3: Transcribe WAV to SRT via Whisper
         ReportProgress("  Transcribing audio to text...");
         if (_settings.UseVoiceActivityDetection)
         {
@@ -187,9 +212,9 @@ public class TranscriptionService
                 language: _settings.WhisperLanguage,
                 modelPath: _settings.WhisperModelpath);
         }
-        token.ThrowIfCancellationRequested();
+        cancellationToken.ThrowIfCancellationRequested();
 
-        // Step 4: Translate subtitles
+        // Step 4: Translate the generated SRT via the LLM
         ReportProgress("  Translating subtitles...");
         var srtFileName = Path.Combine(
             Path.GetDirectoryName(outputPath) ?? string.Empty,
@@ -207,27 +232,31 @@ public class TranscriptionService
                 srtFileName,
                 Path.GetDirectoryName(sourceFile) ?? outputPath);
         }
-        token.ThrowIfCancellationRequested();
+        cancellationToken.ThrowIfCancellationRequested();
 
-        // Step 5: Cleanup temp files
+        // Step 5: Clean up temporary files (intermediate SRT and WAV)
         try
         {
             if (File.Exists(srtFileName)) File.Delete(srtFileName);
             if (File.Exists(outputPath)) File.Delete(outputPath);
-            var tempDir = Path.GetDirectoryName(outputPath);
-            if (tempDir is not null
-                && Directory.Exists(tempDir)
-                && !Directory.EnumerateFileSystemEntries(tempDir).Any())
+
+            var tempDirectory = Path.GetDirectoryName(outputPath);
+            if (tempDirectory is not null
+                && Directory.Exists(tempDirectory)
+                && !Directory.EnumerateFileSystemEntries(tempDirectory).Any())
             {
-                Directory.Delete(tempDir);
+                Directory.Delete(tempDirectory);
             }
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            ReportProgress($"  Warning: Cleanup issue — {ex.Message}");
+            ReportProgress($"  Warning: Cleanup issue — {exception.Message}");
         }
     }
 
+    /// <summary>
+    /// Fires the <see cref="ProgressChanged"/> event with the given message.
+    /// </summary>
     private void ReportProgress(string message)
     {
         ProgressChanged?.Invoke(message);

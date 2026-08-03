@@ -2,10 +2,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:vm="clr-namespace:WhisperProject.Avalonia.ViewModels"
+        xmlns:viewModels="clr-namespace:WhisperProject.Avalonia.ViewModels"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="720"
         x:Class="WhisperProject.Avalonia.Views.OptionsWindow"
-        x:DataType="vm:OptionsViewModel"
+        x:DataType="viewModels:OptionsViewModel"
         Title="Transcription Options"
         Width="620" Height="740"
         WindowStartupLocation="CenterOwner">
