@@ -237,7 +237,7 @@ public static class WhisperClient
         using var whisperFactory = WhisperFactory.FromPath(modelFileName);
         using var processor = whisperFactory.CreateBuilder()
             .WithThreads(Environment.ProcessorCount)
-            .WithLanguage(language ?? "auto")
+            .WithLanguage(string.IsNullOrWhiteSpace(language) ? "auto" : language)
             .Build();
 
         var subtitles = new List<(TimeSpan Start, TimeSpan End, string Text)>();
