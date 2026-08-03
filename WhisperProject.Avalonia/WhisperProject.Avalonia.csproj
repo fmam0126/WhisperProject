@@ -17,4 +17,8 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WhisperProject.Core\WhisperProject.Core.csproj" />
+  </ItemGroup>
 </Project>

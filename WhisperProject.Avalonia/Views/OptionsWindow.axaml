@@ -1,0 +1,196 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:WhisperProject.Avalonia.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="720"
+        x:Class="WhisperProject.Avalonia.Views.OptionsWindow"
+        x:DataType="vm:OptionsViewModel"
+        Title="Transcription Options"
+        Width="620" Height="740"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Resources>
+        <Thickness x:Key="SectionMargin">0,12,0,0</Thickness>
+        <Thickness x:Key="FieldMargin">0,4,0,0</Thickness>
+    </Window.Resources>
+
+    <ScrollViewer>
+        <StackPanel Margin="20" Spacing="4">
+
+            <!-- ════════════════════════════════════════════════════════ -->
+            <!-- LLM / API Settings                                        -->
+            <!-- ════════════════════════════════════════════════════════ -->
+            <TextBlock Text="LLM / API Settings"
+                       FontWeight="Bold" FontSize="16"
+                       Margin="{StaticResource SectionMargin}"/>
+            <Border Height="1" Background="{DynamicResource SystemAccentColor}"
+                    Margin="0,0,0,6"/>
+
+            <TextBlock Text="URL:"/>
+            <TextBox Text="{Binding Url}" PlaceholderText="http://127.0.0.1"
+                     Margin="{StaticResource FieldMargin}"/>
+
+            <TextBlock Text="Port:"/>
+            <TextBox Text="{Binding Port}" PlaceholderText="1234"
+                     Margin="{StaticResource FieldMargin}"/>
+
+            <TextBlock Text="GPT Path:"/>
+            <TextBox Text="{Binding GptPath}" PlaceholderText="/v1"
+                     Margin="{StaticResource FieldMargin}"/>
+
+            <TextBlock Text="GPT Model:"/>
+            <TextBox Text="{Binding GptModel}" PlaceholderText="google/gemma-4-e4b"
+                     Margin="{StaticResource FieldMargin}"/>
+
+            <TextBlock Text="API Key:"/>
+            <TextBox Text="{Binding ApiKey}" PlaceholderText="(optional)"
+                     Margin="{StaticResource FieldMargin}"/>
+
+            <TextBlock Text="Target Language:"/>
+            <TextBox Text="{Binding TargetLanguage}" PlaceholderText="English"
+                     Margin="{StaticResource FieldMargin}"/>
+
+            <!-- ════════════════════════════════════════════════════════ -->
+            <!-- Whisper Settings                                          -->
+            <!-- ════════════════════════════════════════════════════════ -->
+            <TextBlock Text="Whisper Settings"
+                       FontWeight="Bold" FontSize="16"
+                       Margin="{StaticResource SectionMargin}"/>
+            <Border Height="1" Background="{DynamicResource SystemAccentColor}"
+                    Margin="0,0,0,6"/>
+
+            <TextBlock Text="Whisper Model Path:"/>
+            <TextBox Text="{Binding WhisperModelPath}"
+                     PlaceholderText="Path to ggml-largev2.bin (leave empty to auto-download)"
+                     Margin="{StaticResource FieldMargin}"/>
+
+            <TextBlock Text="Whisper Language:"/>
+            <TextBox Text="{Binding WhisperLanguage}"
+                     PlaceholderText="e.g. 'en', 'no' (leave empty for auto-detect)"
+                     Margin="{StaticResource FieldMargin}"/>
+
+            <!-- ════════════════════════════════════════════════════════ -->
+            <!-- Translation Mode (radio)                                  -->
+            <!-- ════════════════════════════════════════════════════════ -->
+            <TextBlock Text="Translation Mode"
+                       FontWeight="Bold" FontSize="16"
+                       Margin="{StaticResource SectionMargin}"/>
+            <Border Height="1" Background="{DynamicResource SystemAccentColor}"
+                    Margin="0,0,0,6"/>
+            <TextBlock Text="Choose how subtitles are translated. Context mode sends batches with context; per-line mode translates each line independently."
+                       TextWrapping="Wrap" Foreground="{DynamicResource SystemAltMediumColor}"/>
+
+            <RadioButton GroupName="TranslationMode"
+                         IsChecked="{Binding UseContextTranslation}"
+                         Margin="{StaticResource FieldMargin}">
+                Context Translation — translates subtitles in batches preserving context
+            </RadioButton>
+            <RadioButton GroupName="TranslationMode"
+                         IsChecked="{Binding UsePerLineTranslation}"
+                         Margin="{StaticResource FieldMargin}">
+                Per-Line Translation — translates each subtitle line independently
+            </RadioButton>
+
+            <!-- ════════════════════════════════════════════════════════ -->
+            <!-- Voice Activity Detection (radio)                          -->
+            <!-- ════════════════════════════════════════════════════════ -->
+            <TextBlock Text="Voice Activity Detection"
+                       FontWeight="Bold" FontSize="16"
+                       Margin="{StaticResource SectionMargin}"/>
+            <Border Height="1" Background="{DynamicResource SystemAccentColor}"
+                    Margin="0,0,0,6"/>
+            <TextBlock Text="VAD filters out silence before transcription. Disabled processes the full audio."
+                       TextWrapping="Wrap" Foreground="{DynamicResource SystemAltMediumColor}"/>
+
+            <RadioButton GroupName="VAD"
+                         IsChecked="{Binding VadEnabled}"
+                         Margin="{StaticResource FieldMargin}">
+                Enabled — detect and transcribe only speech segments
+            </RadioButton>
+            <RadioButton GroupName="VAD"
+                         IsChecked="{Binding VadDisabled}"
+                         Margin="{StaticResource FieldMargin}">
+                Disabled — process the entire audio file
+            </RadioButton>
+
+            <!-- ════════════════════════════════════════════════════════ -->
+            <!-- Voice Enhancement (radio)                                 -->
+            <!-- ════════════════════════════════════════════════════════ -->
+            <TextBlock Text="Voice Enhancement (DpdfNet)"
+                       FontWeight="Bold" FontSize="16"
+                       Margin="{StaticResource SectionMargin}"/>
+            <Border Height="1" Background="{DynamicResource SystemAccentColor}"
+                    Margin="0,0,0,6"/>
+            <TextBlock Text="DpdfNet is an AI-based speech denoiser that enhances voice clarity before transcription."
+                       TextWrapping="Wrap" Foreground="{DynamicResource SystemAltMediumColor}"/>
+
+            <RadioButton GroupName="DpdfNet"
+                         IsChecked="{Binding DpdfNetEnabled}"
+                         Margin="{StaticResource FieldMargin}">
+                Enabled — apply DpdfNet voice enhancement
+            </RadioButton>
+            <RadioButton GroupName="DpdfNet"
+                         IsChecked="{Binding DpdfNetDisabled}"
+                         Margin="{StaticResource FieldMargin}">
+                Disabled — no voice enhancement
+            </RadioButton>
+
+            <TextBlock Text="DpdfNet Model Path:" Margin="0,8,0,0"/>
+            <TextBox Text="{Binding DpdfNetModelPath}"
+                     PlaceholderText="(leave empty to auto-download from URL below)"
+                     Margin="{StaticResource FieldMargin}"/>
+            <TextBlock Text="DpdfNet Download URL:"/>
+            <TextBox Text="{Binding DpdfNetDownloadUrl}"
+                     Margin="{StaticResource FieldMargin}"/>
+
+            <!-- ════════════════════════════════════════════════════════ -->
+            <!-- Performance Settings                                      -->
+            <!-- ════════════════════════════════════════════════════════ -->
+            <TextBlock Text="Performance"
+                       FontWeight="Bold" FontSize="16"
+                       Margin="{StaticResource SectionMargin}"/>
+            <Border Height="1" Background="{DynamicResource SystemAccentColor}"
+                    Margin="0,0,0,6"/>
+
+            <StackPanel Orientation="Horizontal" Spacing="12"
+                        Margin="{StaticResource FieldMargin}">
+                <TextBlock Text="Concurrency:" VerticalAlignment="Center"/>
+                <TextBox Text="{Binding Concurrency}" Width="80"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="12"
+                        Margin="{StaticResource FieldMargin}">
+                <TextBlock Text="Context Size:" VerticalAlignment="Center"/>
+                <TextBox Text="{Binding ContextSize}" Width="80"/>
+            </StackPanel>
+
+            <!-- ════════════════════════════════════════════════════════ -->
+            <!-- System Prompt                                             -->
+            <!-- ════════════════════════════════════════════════════════ -->
+            <TextBlock Text="System Prompt"
+                       FontWeight="Bold" FontSize="16"
+                       Margin="{StaticResource SectionMargin}"/>
+            <Border Height="1" Background="{DynamicResource SystemAccentColor}"
+                    Margin="0,0,0,6"/>
+
+            <TextBox Text="{Binding SystemPrompt}"
+                     AcceptsReturn="True"
+                     Height="100"
+                     TextWrapping="Wrap"
+                     Margin="{StaticResource FieldMargin}"/>
+
+            <!-- ════════════════════════════════════════════════════════ -->
+            <!-- Actions                                                   -->
+            <!-- ════════════════════════════════════════════════════════ -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                        Spacing="12" Margin="0,16,0,8">
+                <Button Content="OK" Width="80"
+                        x:Name="OkButton" IsDefault="True"/>
+                <Button Content="Cancel" Width="80"
+                        x:Name="CancelButton" IsCancel="True"/>
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</Window>

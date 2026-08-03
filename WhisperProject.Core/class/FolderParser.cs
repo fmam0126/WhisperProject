@@ -1,6 +1,6 @@
 namespace WhisperProject.Class;
 
-class FolderParser
+public class FolderParser
 {
     /// <summary>
     /// finds all mp4, mkv and mp3 files in the input folder and its subdirectories

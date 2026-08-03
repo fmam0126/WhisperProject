@@ -4,7 +4,7 @@ using FFMpegCore.Enums;
 
 namespace WhisperProject.Class;
 
-class FileConvert
+public class FileConvert
 {
     // Define the working directory
     public string WorkingPath = string.Empty;

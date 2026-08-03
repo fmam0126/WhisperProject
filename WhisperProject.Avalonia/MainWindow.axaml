@@ -2,8 +2,91 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        xmlns:vm="clr-namespace:WhisperProject.Avalonia.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="550"
         x:Class="WhisperProject.Avalonia.MainWindow"
-        Title="WhisperProject.Avalonia">
-    Welcome to Avalonia!
+        x:DataType="vm:MainWindowViewModel"
+        Title="Whisper Project — Subtitle Generator"
+        Width="720" Height="580"
+        MinWidth="520" MinHeight="380"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+        <Thickness x:Key="ControlMargin">0,6,0,0</Thickness>
+    </Window.Resources>
+
+    <DockPanel Margin="16">
+
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <!-- TOP: Mode, path & buttons                                     -->
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <StackPanel DockPanel.Dock="Top" Spacing="8">
+
+            <!-- Mode selectors (radio buttons) -->
+            <StackPanel Orientation="Horizontal" Spacing="16">
+                <RadioButton GroupName="InputMode"
+                             IsChecked="{Binding IsFileMode}"
+                             FontWeight="Bold">
+                    Single File
+                </RadioButton>
+                <RadioButton GroupName="InputMode"
+                             IsChecked="{Binding IsFolderMode}"
+                             FontWeight="Bold">
+                    Folder (batch)
+                </RadioButton>
+            </StackPanel>
+
+            <!-- Path display + Browse button -->
+            <Grid ColumnDefinitions="*,Auto" Margin="{StaticResource ControlMargin}">
+                <TextBox Grid.Column="0"
+                         Text="{Binding SelectedPath}"
+                         IsReadOnly="True"
+                         PlaceholderText="Select a file or folder to transcribe..."
+                         VerticalAlignment="Center"/>
+                <Button Grid.Column="1"
+                        Content="Browse..."
+                        Margin="8,0,0,0" Width="90"
+                        x:Name="BrowseButton"/>
+            </Grid>
+
+            <!-- Action buttons -->
+            <StackPanel Orientation="Horizontal" Spacing="12"
+                        Margin="{StaticResource ControlMargin}">
+                <Button Content="Options..."
+                        Width="90"
+                        x:Name="OptionsButton"/>
+                <Button Content="Start Transcription"
+                        Width="140"
+                        IsEnabled="{Binding CanStart}"
+                        x:Name="StartButton"/>
+                <Button Content="Cancel"
+                        Width="80"
+                        IsEnabled="{Binding IsProcessing}"
+                        x:Name="CancelButton"/>
+            </StackPanel>
+
+            <!-- Section divider -->
+            <Border Height="1" Background="{DynamicResource SystemAccentColor}"
+                    Margin="0,8,0,4"/>
+
+            <TextBlock Text="Output Log:"
+                       FontWeight="Bold" Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <!-- CENTER: scrollable output log                                 -->
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <ScrollViewer x:Name="LogScrollViewer"
+                      VerticalScrollBarVisibility="Auto">
+            <TextBox Text="{Binding LogOutput}"
+                     IsReadOnly="True"
+                     FontFamily="Consolas, Courier New, monospace"
+                     FontSize="12"
+                     TextWrapping="Wrap"
+                     AcceptsReturn="True"
+                     BorderThickness="0"
+                     Background="Transparent"/>
+        </ScrollViewer>
+
+    </DockPanel>
 </Window>
