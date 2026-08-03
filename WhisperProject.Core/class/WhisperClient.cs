@@ -42,7 +42,7 @@ public static class WhisperClient
         // This section creates the processor object which is used to process the audio file, it uses language `auto` to detect the language of the audio file.
         var builder = whisperFactory.CreateBuilder()
             .WithThreads(Environment.ProcessorCount)
-            .WithLanguage(language ?? "auto");
+            .WithLanguage(string.IsNullOrWhiteSpace(language) ? "auto" : language);
 
 
         using var processor = builder.Build();
