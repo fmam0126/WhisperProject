@@ -47,7 +47,7 @@ public class OptionsViewModel : ViewModelBase
         set => SetProperty(ref _apiKey, value);
     }
 
-    private string _gptPath = "/v1";
+    private string _gptPath = "/v1/chat/completions";
 
     /// <summary>
     /// The base path for the OpenAI-compatible API (e.g. "/v1").
