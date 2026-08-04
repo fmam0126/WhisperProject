@@ -30,15 +30,11 @@ jobs:
       - name: Test
         run: dotnet test WhisperProject.sln --configuration Release --no-build --verbosity normal
 
-      # - name: Publish Core (Windows)
-        # run: dotnet publish WhisperProject.Core/WhisperProject.Core.csproj --configuration Release -r win-x64 -p:PublishSingleFile=true --self-contained true --output publish/core-win
-
       - name: Publish Avalonia (Windows)
         run: dotnet publish WhisperProject.Avalonia/WhisperProject.Avalonia.csproj --configuration Release -r win-x64 -p:PublishSingleFile=true --self-contained true --output publish/avalonia-win
 
       - name: Zip Artifacts
         run: |
-          # cd publish/core-win && zip -r ../core-windows-x64.zip . && cd ../..
           cd publish/avalonia-win && zip -r ../avalonia-windows-x64.zip . && cd ../..
 
       - name: Delete existing canary release and tag
@@ -54,5 +50,4 @@ jobs:
             --title "Canary Build" \
             --notes "Automated build from PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}<br>Commit: ${{ github.sha }}" \
             --prerelease \
-            # publish/core-windows-x64.zip \
             publish/avalonia-windows-x64.zip
