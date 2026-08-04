@@ -1,0 +1,58 @@
+name: Canary Release
+
+on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+
+jobs:
+  build-test-and-release:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore WhisperProject.sln
+
+      - name: Build
+        run: dotnet build WhisperProject.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test WhisperProject.sln --configuration Release --no-build --verbosity normal
+
+      - name: Publish Core
+        run: dotnet publish WhisperProject.Core/WhisperProject.Core.csproj --configuration Release --no-build --output publish/core
+
+      - name: Publish Avalonia
+        run: dotnet publish WhisperProject.Avalonia/WhisperProject.Avalonia.csproj --configuration Release --no-build --output publish/avalonia
+
+      - name: Zip Artifacts
+        run: |
+          cd publish/core && zip -r ../core-canary.zip . && cd ../..
+          cd publish/avalonia && zip -r ../avalonia-canary.zip . && cd ../..
+
+      - name: Delete existing canary release and tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release delete canary --cleanup-tag -y || true
+
+      - name: Create Canary Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create canary \
+            --title "Canary Build" \
+            --notes "Automated build from PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}<br>Commit: ${{ github.sha }}" \
+            --prerelease \
+            publish/core-canary.zip \
+            publish/avalonia-canary.zip

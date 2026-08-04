@@ -4,13 +4,13 @@ using FFMpegCore.Enums;
 
 namespace WhisperProject.Class;
 
-class FileConvert
+public class FileConvert
 {
     // Define the working directory
     public string WorkingPath = string.Empty;
     public FileConvert(string workingPath)
     {
-        WorkingPath = workingPath + "\\temp";
+        WorkingPath = workingPath + "temp";
     }
 
     // TODO: Decide if the method should take an output path as an input

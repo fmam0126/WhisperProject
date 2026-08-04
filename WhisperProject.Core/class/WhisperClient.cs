@@ -18,13 +18,19 @@ public static class WhisperClient
         return time.ToString(@"hh\:mm\:ss\,fff", CultureInfo.InvariantCulture);
     }
 
-    // This examples shows how to use Whisper.net to create a transcription from an audio file with 16Khz sample rate.
-    // It uses both Cuda (NVidia GPU) or CPU, and loads the first one that is available.
+    /// <summary>
+    /// transcribes the given audio file using the Whisper model and writes the results to an SRT file. If the model file does not exist, it will be downloaded automatically. 
+    /// The language can be specified, or set to "auto" for automatic detection.
+    /// </summary>
+    /// <param name="inputFileName">The path to the input audio file</param>
+    /// <param name="modelPath">The path to the Whisper model file</param>
+    /// <param name="language">The language of the audio file</param>
+    /// <returns></returns>
     public static async Task TranscribeAsync(string inputFileName, string? modelPath = null, string? language = null)
     {
         // We declare three variables which we will use later, ggmlType, modelFileName and wavFileName
         var ggmlType = GgmlType.LargeV2;
-        var modelFileName = modelPath ?? "ggml-largev2.bin";
+        var modelFileName = string.IsNullOrWhiteSpace(modelPath) ? "ggml-largev2.bin" : modelPath;
         // var vadModelFileName = "./ggml-silero-v6.2.0.bin";
         var wavFileName = inputFileName;
 
@@ -42,7 +48,7 @@ public static class WhisperClient
         // This section creates the processor object which is used to process the audio file, it uses language `auto` to detect the language of the audio file.
         var builder = whisperFactory.CreateBuilder()
             .WithThreads(Environment.ProcessorCount)
-            .WithLanguage(language ?? "auto");
+            .WithLanguage(string.IsNullOrWhiteSpace(language) ? "auto" : language);
 
 
         using var processor = builder.Build();
@@ -113,11 +119,18 @@ public static class WhisperClient
         }
     }
 
-
+    /// <summary>
+    /// Transcribes the given audio file using the Whisper model with Voice Activity Detection (VAD) and writes the results to an SRT file. 
+    /// If the model file does not exist, it will be downloaded automatically. The language can be specified, or set to "auto" for automatic detection.
+    /// </summary>
+    /// <param name="inputFileName">The path to the input audio file</param>
+    /// <param name="modelPath">The path to the Whisper model file</param>
+    /// <param name="language">The language of the audio file</param>
+    /// <returns></returns>
     public static async Task TranscribeVadAsync(string inputFileName, string? modelPath = null, string? language = null)
     {
         var ggmlType = GgmlType.LargeV2;
-        var modelFileName = modelPath ?? "ggml-largev2.bin";
+        var modelFileName = string.IsNullOrWhiteSpace(modelPath) ? "ggml-largev2.bin" : modelPath;
         var vadModelFileName = "./ggml-silero-v6.2.0.bin";
         var sileroVadType = SileroVadType.V6_2_0;
         var wavFileName = inputFileName;
@@ -237,7 +250,7 @@ public static class WhisperClient
         using var whisperFactory = WhisperFactory.FromPath(modelFileName);
         using var processor = whisperFactory.CreateBuilder()
             .WithThreads(Environment.ProcessorCount)
-            .WithLanguage(language ?? "auto")
+            .WithLanguage(string.IsNullOrWhiteSpace(language) ? "auto" : language)
             .Build();
 
         var subtitles = new List<(TimeSpan Start, TimeSpan End, string Text)>();
@@ -284,8 +297,13 @@ public static class WhisperClient
             Console.WriteLine($"Failed to write SRT file: {ex}");
         }
     }
-
-    private static TimeSpan MapToOriginalTime(long processedTimeTicks, List<VadTimeMapping> mappingTable)
+    /// <summary>
+    /// Maps a processed time (after VAD filtering) back to the original time in the audio file using a mapping table.
+    /// </summary>
+    /// <param name="processedTimeTicks">The processed time in ticks</param>
+    /// <param name="mappingTable">The mapping table</param>
+    /// <returns>The original time in ticks</returns>
+    internal static TimeSpan MapToOriginalTime(long processedTimeTicks, List<VadTimeMapping> mappingTable)
     {
         if (mappingTable.Count == 0)
             return TimeSpan.FromTicks(processedTimeTicks);
@@ -327,21 +345,38 @@ public static class WhisperClient
         return TimeSpan.FromTicks(origTicks);
     }
 
-    private record VadTimeMapping(long ProcessedTimeTicks, long OriginalTimeTicks)
+    internal record VadTimeMapping(long ProcessedTimeTicks, long OriginalTimeTicks)
     {
         public static readonly IComparer<VadTimeMapping> ProcessedTimeComparer =
             Comparer<VadTimeMapping>.Create((a, b) => a.ProcessedTimeTicks.CompareTo(b.ProcessedTimeTicks));
     }
-
+    /// <summary>
+    /// Downloads the specified Whisper model file if it does not already exist on disk.
+    /// </summary>
+    /// <param name="fileName">The path to the model file</param>
+    /// <param name="ggmlType">The type of the GGML model</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <exception cref="ArgumentException"></exception>
     private static async Task DownloadModel(string fileName, GgmlType ggmlType)
     {
+        if (string.IsNullOrWhiteSpace(fileName))
+            throw new ArgumentException("Model file name must not be empty.", nameof(fileName));
         Console.WriteLine($"Downloading Model {fileName}");
         using var modelStream = await WhisperGgmlDownloader.Default.GetGgmlModelAsync(ggmlType);
         using var fileWriter = File.OpenWrite(fileName);
         await modelStream.CopyToAsync(fileWriter);
     }
+    /// <summary>
+    /// Downloads the specified Silero VAD model file if it does not already exist on disk.
+    /// </summary>
+    /// <param name="fileName">The path to the VAD model file</param>
+    /// <param name="vadType">The type of the Silero VAD model</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    /// <exception cref="ArgumentException"></exception>
     private static async Task DownloadVadModel(string fileName, SileroVadType vadType)
     {
+        if (string.IsNullOrWhiteSpace(fileName))
+            throw new ArgumentException("VAD model file name must not be empty.", nameof(fileName));
         Console.WriteLine($"Downloading VAD Model {fileName}");
         using var modelStream = await WhisperGgmlDownloader.Default.GetGgmlSileroVadModelAsync(vadType);
         using var fileWriter = File.OpenWrite(fileName);

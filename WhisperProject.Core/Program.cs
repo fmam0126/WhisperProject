@@ -10,15 +10,6 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        // var input = args[0];
-        // Console.WriteLine(input);
-        // Console.WriteLine("Input a path to a folder:");
-        // string? readResult = Console.ReadLine();
-        // if (readResult == null)
-        // {
-        //     throw new Exception("Filepath cannot be null");
-        // }
-
         // Build a Config object to read from appsettings.json and environment variables
         IConfigurationRoot config;
         try
@@ -48,7 +39,18 @@ class Program
             return;
         }
 
-
+        SubtitleTranslator subtitleTranslator = new SubtitleTranslator
+        {
+            Url = settings.Url,
+            Port = settings.Port,
+            TargetLanguage = settings.TargetLanguage,
+            ApiKey = settings.ApiKey,
+            GptPath = settings.GptPath,
+            Model = settings.GptModel,
+            Concurrency = settings.Concurrency,
+            ContextSize = settings.ContextSize,
+            SystemPrompt = settings.SystemPrompt
+        };
 
 
         List<string> sourceFiles;
@@ -112,17 +114,16 @@ class Program
             Console.WriteLine("Tranlating subtitles...");
             try
             {
-                SubtitleTranslator subtitleTranslator = new SubtitleTranslator
-                {
-                    Url = settings.Url,
-                    Port = settings.Port,
-                    TargetLanguage = settings.TargetLanguage,
-                    ApiKey = settings.ApiKey,
-                    GptPath = settings.GptPath,
-                    Model = settings.GptModel
-                };
                 string srtFileName = $"{Path.GetDirectoryName(outputPath)}\\{Path.GetFileNameWithoutExtension(outputPath)}.srt";
-                await subtitleTranslator.TranslateSrtAsync(srtFileName, Path.GetDirectoryName(item) ?? outputPath);
+                switch (settings.UseContextTranslation)
+                {
+                    case true:
+                        await subtitleTranslator.TranslateSrtWithContextAsync(srtFileName, Path.GetDirectoryName(item) ?? outputPath);
+                        break;
+                    case false:
+                        await subtitleTranslator.TranslateSrtAsync(srtFileName, Path.GetDirectoryName(item) ?? outputPath);
+                        break;
+                }
                 Console.WriteLine($"Finished Translating {Path.GetFileName(item)}");
             }
             catch (Exception ex)
@@ -136,6 +137,7 @@ class Program
                 string srtFileName = $"{Path.GetDirectoryName(outputPath)}\\{Path.GetFileNameWithoutExtension(outputPath)}.srt";
                 if (File.Exists(srtFileName)) File.Delete(srtFileName);
                 if (File.Exists(outputPath)) File.Delete(outputPath);
+                // if the directory is empty after deleting the files, delete the directory as well
                 if (!Directory.EnumerateFileSystemEntries(Path.GetDirectoryName(outputPath) ?? string.Empty).Any())
                 {
                     Directory.Delete(Path.GetDirectoryName(outputPath) ?? string.Empty);

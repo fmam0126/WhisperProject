@@ -27,6 +27,10 @@ Create an `appsettings.json` file in the project root with the following structu
     "ApiKey": "YOUR_API_KEY",
     "GptPath": "/v1/chat/completions",
     "GptModel": "model-name",
+    "Concurrency": 4,
+    "UseContextTranslation": true,
+    "ContextSize": 10,
+    "SystemPrompt": "You are a helpful assistant for translating video subtitles. You receive text in the format of a subtitle file and you translate it to the target language without adding any comments or explanations, just output the translated text. Always keep the formatting of the original text.",
     "WhisperModelpath": "./ggml-largev2.bin",
     "WhisperLanguage": "auto",
     "UseVoiceActivityDetection": false,
@@ -48,6 +52,10 @@ Create an `appsettings.json` file in the project root with the following structu
 | `ApiKey`                    | API key for authenticating with the LLM service.                                     |
 | `GptPath`                   | API endpoint path for chat completions (e.g., "/v1/chat/completions").               |
 | `GptModel`                  | Name of the LLM model to use for translation.                                        |
+| `Concurrency`               | Maximum number of parallel LLM translation requests (default: 4).                    |
+| `UseContextTranslation`     | Whether to use context-aware batch translation (`true`) or single-line (`false`).    |
+| `ContextSize`               | Number of subtitle entries sent to the LLM per batch for context-aware translation.  |
+| `SystemPrompt`              | System prompt instructions sent to the LLM for translation behavior.                 |
 | `WhisperModelpath`          | File path to the local Whisper model binary.                                         |
 | `WhisperLanguage`           | Language code for Whisper transcription, or "auto" for automatic detection.          |
 | `UseVoiceActivityDetection` | Enable VAD to detect speech segments before transcription (`true`/`false`).          |

@@ -9,6 +9,10 @@ public sealed class Settings
     public required int Port { get; set; }
     public required string GptPath { get; set; } = string.Empty;
     public required string GptModel { get; set; } = string.Empty;
+    public uint Concurrency { get; set; } = 4;
+    public bool UseContextTranslation { get; set; } = true;
+    public uint ContextSize { get; set; } = 10;
+    public string SystemPrompt { get; set; } = "You are a helpful assistant for translating video subtitles. You receive text in the format of a subtitle file and you translate it to the target language without adding any comments or explanations, just output the translated text. Always keep the formatting of the original text.";
     public required string WhisperModelpath { get; set; } = string.Empty;
     // public required string WhisperModel { get; set; } = string.Empty;
     public string WhisperLanguage { get; set; } = null!;
