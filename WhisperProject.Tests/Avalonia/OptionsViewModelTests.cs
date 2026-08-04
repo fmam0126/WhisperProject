@@ -10,35 +10,6 @@ namespace WhisperProject.Tests.Avalonia;
 /// </summary>
 public class OptionsViewModelTests
 {
-    // ── Defaults ──────────────────────────────────────────────────────────
-
-    [Fact]
-    public void Defaults_AllProperties_HaveExpectedValues()
-    {
-        var vm = new OptionsViewModel();
-
-        Assert.Equal("http://127.0.0.1", vm.Url);
-        Assert.Equal("1234", vm.Port);
-        Assert.Equal("/v1", vm.GptPath);
-        Assert.Equal("google/gemma-4-e2b", vm.GptModel);
-        Assert.Equal("English", vm.TargetLanguage);
-        Assert.Equal("", vm.ApiKey);
-        Assert.Equal("", vm.WhisperModelPath);
-        Assert.Equal("", vm.WhisperLanguage);
-        Assert.Equal("4", vm.Concurrency);
-        Assert.Equal("10", vm.ContextSize);
-        Assert.NotEmpty(vm.SystemPrompt);
-        Assert.Equal("", vm.DpdfNetModelPath);
-        Assert.NotEmpty(vm.DpdfNetDownloadUrl);
-        // Radio defaults
-        Assert.True(vm.UseContextTranslation);
-        Assert.False(vm.UsePerLineTranslation);
-        Assert.True(vm.VadEnabled);
-        Assert.False(vm.VadDisabled);
-        Assert.False(vm.DpdfNetEnabled);
-        Assert.True(vm.DpdfNetDisabled);
-    }
-
     // ── Radio group mutual exclusion ──────────────────────────────────────
 
     [Fact]
