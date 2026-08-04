@@ -5,7 +5,7 @@ using WhisperProject.Tests.TestHelpers;
 namespace WhisperProject.Tests.Avalonia;
 
 /// <summary>
-/// Tests for <see cref="OptionsViewModel"/>: defaults, radio-group mutual
+/// Tests for <see cref="OptionsViewModel"/>: radio-group mutual
 /// exclusion, <c>ToSettings</c> parse fallbacks, and settings round-trip.
 /// </summary>
 public class OptionsViewModelTests
