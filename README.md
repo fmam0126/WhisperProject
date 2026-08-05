@@ -30,7 +30,6 @@ The solution (`WhisperProject.sln`) contains three projects targeting **.NET 10*
 - **Auto-download** of Whisper model, VAD model, and DpdfNet model when missing.
 - **Retry policies** with [Polly](https://github.com/App-vNext/Polly) for robust LLM API communication.
 - **Reasoning-model support** — automatically strips `<think>` tags from LLM responses (for models like DeepSeek-R1, QwQ, etc.).
-- **Cancellation support** during processing (GUI).
 
 ## Prerequisites
 
