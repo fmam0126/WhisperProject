@@ -4,10 +4,10 @@ on:
   pull_request:
     branches: [main]
     types: [closed]
+  workflow_dispatch:
 
 jobs:
   build-test-and-release:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -30,16 +30,12 @@ jobs:
       - name: Test
         run: dotnet test WhisperProject.sln --configuration Release --no-build --verbosity normal
 
-      - name: Publish Core
-        run: dotnet publish WhisperProject.Core/WhisperProject.Core.csproj --configuration Release --no-build --output publish/core
-
-      - name: Publish Avalonia
-        run: dotnet publish WhisperProject.Avalonia/WhisperProject.Avalonia.csproj --configuration Release --no-build --output publish/avalonia
+      - name: Publish Avalonia (Windows)
+        run: dotnet publish WhisperProject.Avalonia/WhisperProject.Avalonia.csproj --configuration Release -r win-x64 -p:PublishSingleFile=true --self-contained true --output publish/avalonia-win
 
       - name: Zip Artifacts
         run: |
-          cd publish/core && zip -r ../core-canary.zip . && cd ../..
-          cd publish/avalonia && zip -r ../avalonia-canary.zip . && cd ../..
+          cd publish/avalonia-win && zip -r ../avalonia-windows-x64.zip . && cd ../..
 
       - name: Delete existing canary release and tag
         env:
@@ -54,5 +50,4 @@ jobs:
             --title "Canary Build" \
             --notes "Automated build from PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}<br>Commit: ${{ github.sha }}" \
             --prerelease \
-            publish/core-canary.zip \
-            publish/avalonia-canary.zip
+            publish/avalonia-windows-x64.zip
