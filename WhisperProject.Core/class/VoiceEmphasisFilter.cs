@@ -73,6 +73,11 @@ public class VoiceEmphasisFilter
     /// <param name="modelDownloadUrl">URL to download the DPDFNet model</param>
     public async Task ApplyDpdfNetVoiceEnhancement(string inputFilePath, string outputFilePath, string modelPath, string modelDownloadUrl)
     {
+        if (!File.Exists(inputFilePath))
+        {
+            throw new FileNotFoundException($"Input file not found: {inputFilePath}");
+        }
+        modelPath = string.IsNullOrWhiteSpace(modelPath) ? "dpdfnet8.onnx" : modelPath;
         if (!File.Exists(modelPath))
         {
             Console.WriteLine($"DPDFNet model not found at {modelPath}.");
