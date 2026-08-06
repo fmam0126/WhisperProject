@@ -331,7 +331,7 @@ public class OptionsViewModel : ViewModelBase
         GptPath = settings.GptPath;
         GptModel = settings.GptModel;
         TargetLanguage = settings.TargetLanguage;
-        WhisperModelPath = settings.WhisperModelpath;
+        WhisperModelPath = settings.WhisperModelPath;
         WhisperLanguage = settings.WhisperLanguage ?? string.Empty;
         Concurrency = settings.Concurrency.ToString();
         ContextSize = settings.ContextSize.ToString();
@@ -369,7 +369,7 @@ public class OptionsViewModel : ViewModelBase
             GptPath = GptPath,
             GptModel = GptModel,
             TargetLanguage = TargetLanguage,
-            WhisperModelpath = WhisperModelPath,
+            WhisperModelPath = WhisperModelPath,
             WhisperLanguage = WhisperLanguage,
             Concurrency = ParseConcurrency(),
             ContextSize = ParseContextSize(),

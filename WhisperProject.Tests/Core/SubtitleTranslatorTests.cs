@@ -12,7 +12,7 @@ public class SubtitleTranslatorTests
     // ── ParseNumberedResponse ────────────────────────────────────────────
 
     [Fact]
-    public void ParseNumberedResponse_WellFormed_ReturnsLinesInOrder()
+    public void ParseNumberedResponseWellFormedReturnsLinesInOrder()
     {
         var result = SubtitleTranslator.ParseNumberedResponse(
             "[1] hello\n[2] world", 2);
@@ -23,7 +23,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void ParseNumberedResponse_WithGaps_PadsWithEmptyStrings()
+    public void ParseNumberedResponseWithGapsPadsWithEmptyStrings()
     {
         var result = SubtitleTranslator.ParseNumberedResponse(
             "[1] a\n[3] c", 3);
@@ -35,7 +35,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void ParseNumberedResponse_MoreLinesThanExpected_TrimsTail()
+    public void ParseNumberedResponseMoreLinesThanExpectedTrimsTail()
     {
         var result = SubtitleTranslator.ParseNumberedResponse(
             "[1] a\n[2] b\n[3] c", 2);
@@ -46,7 +46,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void ParseNumberedResponse_FewerLinesThanExpected_PadsTail()
+    public void ParseNumberedResponseFewerLinesThanExpectedPadsTail()
     {
         var result = SubtitleTranslator.ParseNumberedResponse(
             "[1] a\n[2] b", 4);
@@ -59,7 +59,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void ParseNumberedResponse_NoNumbering_AllEmpty()
+    public void ParseNumberedResponseNoNumberingAllEmpty()
     {
         var result = SubtitleTranslator.ParseNumberedResponse(
             "hello\nworld", 2);
@@ -69,7 +69,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void ParseNumberedResponse_DuplicateNumbers_LastWins()
+    public void ParseNumberedResponseDuplicateNumbersLastWins()
     {
         var result = SubtitleTranslator.ParseNumberedResponse(
             "[1] first\n[1] second", 1);
@@ -79,7 +79,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void ParseNumberedResponse_EmptyResponse_AllEmpty()
+    public void ParseNumberedResponseEmptyResponseAllEmpty()
     {
         var result = SubtitleTranslator.ParseNumberedResponse("", 3);
 
@@ -88,7 +88,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void ParseNumberedResponse_ContinuationLinesIgnored()
+    public void ParseNumberedResponseContinuationLinesIgnored()
     {
         var result = SubtitleTranslator.ParseNumberedResponse(
             "[1] a\ncontinuation\n[2] b", 2);
@@ -99,7 +99,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void ParseNumberedResponse_WhitespacePaddedNumbers_Trimmed()
+    public void ParseNumberedResponseWhitespacePaddedNumbersTrimmed()
     {
         var result = SubtitleTranslator.ParseNumberedResponse(
             "  [1]  hello  ", 1);
@@ -109,7 +109,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void ParseNumberedResponse_ExtraSpacingBeforeBracket_Ignored()
+    public void ParseNumberedResponseExtraSpacingBeforeBracketIgnored()
     {
         // The regex requires ^\[ — lines with leading whitespace before [ don't match
         var result = SubtitleTranslator.ParseNumberedResponse(
@@ -122,7 +122,7 @@ public class SubtitleTranslatorTests
     // ── BuildEndpointUri ─────────────────────────────────────────────────
 
     [Fact]
-    public void BuildEndpointUri_UrlPortPath_Composes()
+    public void BuildEndpointUriUrlPortPathComposes()
     {
         var translator = new SubtitleTranslator
         {
@@ -137,7 +137,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void BuildEndpointUri_ChatCompletionsSuffix_Stripped()
+    public void BuildEndpointUriChatCompletionsSuffixStripped()
     {
         var translator = new SubtitleTranslator
         {
@@ -152,7 +152,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void BuildEndpointUri_ChatCompletionsSuffix_OnlySuffix_ReturnsRoot()
+    public void BuildEndpointUriChatCompletionsSuffixOnlySuffixReturnsRoot()
     {
         var translator = new SubtitleTranslator
         {
@@ -167,7 +167,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void BuildEndpointUri_ChatCompletionsSuffix_CaseInsensitive()
+    public void BuildEndpointUriChatCompletionsSuffixCaseInsensitive()
     {
         var translator = new SubtitleTranslator
         {
@@ -182,7 +182,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void BuildEndpointUri_NoScheme_PrependsHttp()
+    public void BuildEndpointUriNoSchemePrependsHttp()
     {
         var translator = new SubtitleTranslator
         {
@@ -197,7 +197,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void BuildEndpointUri_EmptyGptPath_NoPathComponent()
+    public void BuildEndpointUriEmptyGptPathNoPathComponent()
     {
         var translator = new SubtitleTranslator
         {
@@ -212,7 +212,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void BuildEndpointUri_PortZero_KeepsUrlPort()
+    public void BuildEndpointUriPortZeroKeepsUrlPort()
     {
         var translator = new SubtitleTranslator
         {
@@ -227,7 +227,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void BuildEndpointUri_TrailingSlashes_Trimmed()
+    public void BuildEndpointUriTrailingSlashesTrimmed()
     {
         var translator = new SubtitleTranslator
         {
@@ -242,7 +242,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void BuildEndpointUri_InvalidUrl_ThrowsInvalidOperationException()
+    public void BuildEndpointUriInvalidUrlThrowsInvalidOperationException()
     {
         var translator = new SubtitleTranslator
         {
@@ -255,7 +255,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void BuildEndpointUri_NullUrl_FallsBackToDefault()
+    public void BuildEndpointUriNullUrlFallsBackToDefault()
     {
         // The code uses (Url ?? "http://127.0.0.1"), so null falls back but
         // empty string does not (it passes "" to Uri.TryCreate which fails).
@@ -274,7 +274,7 @@ public class SubtitleTranslatorTests
     // ── RemoveReasoning ──────────────────────────────────────────────────
 
     [Fact]
-    public void RemoveReasoning_SimpleTag_Stripped()
+    public void RemoveReasoningSimpleTagStripped()
     {
         var translator = new SubtitleTranslator();
         var result = translator.RemoveReasoning(
@@ -284,7 +284,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void RemoveReasoning_MultilineTag_Stripped()
+    public void RemoveReasoningMultilineTagStripped()
     {
         var translator = new SubtitleTranslator();
         var input = "<think>\nline one\nline two\n</think>\nactual text";
@@ -295,7 +295,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void RemoveReasoning_MultipleTags_AllStripped()
+    public void RemoveReasoningMultipleTagsAllStripped()
     {
         var translator = new SubtitleTranslator();
         var result = translator.RemoveReasoning(
@@ -305,7 +305,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void RemoveReasoning_NoTags_Unchanged()
+    public void RemoveReasoningNoTagsUnchanged()
     {
         var translator = new SubtitleTranslator();
         var input = "just plain text";
@@ -316,7 +316,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void RemoveReasoning_CaseInsensitive_Stripped()
+    public void RemoveReasoningCaseInsensitiveStripped()
     {
         var translator = new SubtitleTranslator();
         var result = translator.RemoveReasoning(
@@ -326,7 +326,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void RemoveReasoning_Null_ReturnsNull()
+    public void RemoveReasoningNullReturnsNull()
     {
         var translator = new SubtitleTranslator();
         var result = translator.RemoveReasoning(null!);
@@ -335,7 +335,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void RemoveReasoning_Empty_ReturnsEmpty()
+    public void RemoveReasoningEmptyReturnsEmpty()
     {
         var translator = new SubtitleTranslator();
         var result = translator.RemoveReasoning("");
@@ -346,7 +346,7 @@ public class SubtitleTranslatorTests
     // ── PromptBuilder ────────────────────────────────────────────────────
 
     [Fact]
-    public void PromptBuilder_ExactFormat()
+    public void PromptBuilderExactFormat()
     {
         var translator = new SubtitleTranslator();
         var result = translator.PromptBuilder("Hello world", "English", "Norwegian");
@@ -357,7 +357,7 @@ public class SubtitleTranslatorTests
     }
 
     [Fact]
-    public void PromptBuilder_IncludesNewlineSeparator()
+    public void PromptBuilderIncludesNewlineSeparator()
     {
         var translator = new SubtitleTranslator();
         var result = translator.PromptBuilder("test prompt", "en", "fr");

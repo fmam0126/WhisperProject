@@ -13,7 +13,7 @@ public class OptionsViewModelTests
     // ── Radio group mutual exclusion ──────────────────────────────────────
 
     [Fact]
-    public void UsePerLineTranslation_True_UnsetsUseContextTranslation()
+    public void UsePerLineTranslationTrueUnsetsUseContextTranslation()
     {
         var vm = new OptionsViewModel();
         Assert.True(vm.UseContextTranslation);
@@ -25,7 +25,7 @@ public class OptionsViewModelTests
     }
 
     [Fact]
-    public void UseContextTranslation_True_UnsetsUsePerLineTranslation()
+    public void UseContextTranslationTrueUnsetsUsePerLineTranslation()
     {
         var vm = new OptionsViewModel();
         vm.UsePerLineTranslation = true; // flip first
@@ -38,7 +38,7 @@ public class OptionsViewModelTests
     }
 
     [Fact]
-    public void SetAlreadyTrue_DoesNotTouchSibling()
+    public void SetAlreadyTrueDoesNotTouchSibling()
     {
         var vm = new OptionsViewModel();
         // Both should stay: context=true, perLine=false
@@ -50,7 +50,7 @@ public class OptionsViewModelTests
     }
 
     [Fact]
-    public void UsePerLineTranslation_False_DoesNotReenableContext()
+    public void UsePerLineTranslationFalseDoesNotReenableContext()
     {
         var vm = new OptionsViewModel();
         vm.UsePerLineTranslation = true; // perLine on, context off
@@ -65,7 +65,7 @@ public class OptionsViewModelTests
 
     // VAD group
     [Fact]
-    public void VadDisabled_True_UnsetsVadEnabled()
+    public void VadDisabledTrueUnsetsVadEnabled()
     {
         var vm = new OptionsViewModel();
         vm.VadDisabled = true;
@@ -74,7 +74,7 @@ public class OptionsViewModelTests
     }
 
     [Fact]
-    public void VadEnabled_True_UnsetsVadDisabled()
+    public void VadEnabledTrueUnsetsVadDisabled()
     {
         var vm = new OptionsViewModel();
         vm.VadDisabled = true;
@@ -85,7 +85,7 @@ public class OptionsViewModelTests
 
     // DpdfNet group
     [Fact]
-    public void DpdfNetEnabled_True_UnsetsDpdfNetDisabled()
+    public void DpdfNetEnabledTrueUnsetsDpdfNetDisabled()
     {
         var vm = new OptionsViewModel();
         vm.DpdfNetEnabled = true;
@@ -94,7 +94,7 @@ public class OptionsViewModelTests
     }
 
     [Fact]
-    public void DpdfNetDisabled_True_UnsetsDpdfNetEnabled()
+    public void DpdfNetDisabledTrueUnsetsDpdfNetEnabled()
     {
         var vm = new OptionsViewModel();
         vm.DpdfNetEnabled = true;
@@ -113,7 +113,7 @@ public class OptionsViewModelTests
     [InlineData("65536", 1234)]
     [InlineData("abc", 1234)]
     [InlineData("", 1234)]
-    public void ToSettings_Port_ValidatesAndFallsBack(string input, int expected)
+    public void ToSettingsPortValidatesAndFallsBack(string input, int expected)
     {
         var vm = new OptionsViewModel { Port = input };
 
@@ -128,7 +128,7 @@ public class OptionsViewModelTests
     [InlineData("-1", 4u)]
     [InlineData("abc", 4u)]
     [InlineData("16", 16u)]
-    public void ToSettings_Concurrency_ValidatesAndFallsBack(string input, uint expected)
+    public void ToSettingsConcurrencyValidatesAndFallsBack(string input, uint expected)
     {
         var vm = new OptionsViewModel { Concurrency = input };
 
@@ -142,7 +142,7 @@ public class OptionsViewModelTests
     [InlineData("0", 10u)]
     [InlineData("3", 3u)]
     [InlineData("abc", 10u)]
-    public void ToSettings_ContextSize_ValidatesAndFallsBack(string input, uint expected)
+    public void ToSettingsContextSizeValidatesAndFallsBack(string input, uint expected)
     {
         var vm = new OptionsViewModel { ContextSize = input };
 
@@ -152,7 +152,7 @@ public class OptionsViewModelTests
     }
 
     [Fact]
-    public void ToSettings_MapsAllFields_AndSetsInputPath()
+    public void ToSettingsMapsAllFieldsAndSetsInputPath()
     {
         var vm = new OptionsViewModel
         {
@@ -180,7 +180,7 @@ public class OptionsViewModelTests
         Assert.Equal("/api", settings.GptPath);
         Assert.Equal("gpt-4", settings.GptModel);
         Assert.Equal("Norwegian", settings.TargetLanguage);
-        Assert.Equal("model.bin", settings.WhisperModelpath);
+        Assert.Equal("model.bin", settings.WhisperModelPath);
         Assert.Equal("no", settings.WhisperLanguage);
         Assert.Equal(8u, settings.Concurrency);
         Assert.Equal(20u, settings.ContextSize);
@@ -190,7 +190,7 @@ public class OptionsViewModelTests
     }
 
     [Fact]
-    public void ToSettings_RadioGroups_MapToFlags()
+    public void ToSettingsRadioGroupsMapToFlags()
     {
         var vm = new OptionsViewModel();
         vm.UsePerLineTranslation = true;  // → UseContextTranslation=false
@@ -205,7 +205,7 @@ public class OptionsViewModelTests
     }
 
     [Fact]
-    public void LoadFromSettings_PopulatesAllProperties()
+    public void LoadFromSettingsPopulatesAllProperties()
     {
         var settings = SettingsFactory.Create();
         settings.UseContextTranslation = false;
@@ -221,7 +221,7 @@ public class OptionsViewModelTests
         Assert.Equal(settings.GptPath, vm.GptPath);
         Assert.Equal(settings.GptModel, vm.GptModel);
         Assert.Equal(settings.TargetLanguage, vm.TargetLanguage);
-        Assert.Equal(settings.WhisperModelpath, vm.WhisperModelPath);
+        Assert.Equal(settings.WhisperModelPath, vm.WhisperModelPath);
         // WhisperLanguage: Settings has null!, LoadFromSettings uses ?? string.Empty
         Assert.Equal(string.Empty, vm.WhisperLanguage);
         Assert.Equal(settings.Concurrency.ToString(), vm.Concurrency);
@@ -239,7 +239,7 @@ public class OptionsViewModelTests
     }
 
     [Fact]
-    public void LoadFromSettings_ToSettings_RoundTrip()
+    public void LoadFromSettingsToSettingsRoundTrip()
     {
         var original = SettingsFactory.Create();
         original.UseContextTranslation = false;
@@ -261,7 +261,7 @@ public class OptionsViewModelTests
         Assert.Equal(original.GptPath, roundTripped.GptPath);
         Assert.Equal(original.GptModel, roundTripped.GptModel);
         Assert.Equal(original.TargetLanguage, roundTripped.TargetLanguage);
-        Assert.Equal(original.WhisperModelpath, roundTripped.WhisperModelpath);
+        Assert.Equal(original.WhisperModelPath, roundTripped.WhisperModelPath);
         Assert.Equal(original.Concurrency, roundTripped.Concurrency);
         Assert.Equal(original.ContextSize, roundTripped.ContextSize);
         Assert.Equal(original.SystemPrompt, roundTripped.SystemPrompt);

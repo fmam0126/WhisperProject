@@ -9,7 +9,7 @@ namespace WhisperProject.Tests.Core;
 public class WaveReaderTests
 {
     [Fact]
-    public void Constructor_ValidMonoWav_ReadsSampleRateAndSamples()
+    public void ConstructorValidMonoWavReadsSampleRateAndSamples()
     {
         short[] inputSamples = [0, 16384, -32768, 32767];
         var wav = WaveFixture.BuildWav(16000, inputSamples);
@@ -29,7 +29,7 @@ public class WaveReaderTests
     }
 
     [Fact]
-    public void Constructor_MissingFile_ThrowsApplicationException()
+    public void ConstructorMissingFileThrowsApplicationException()
     {
         var missingPath = System.IO.Path.Combine(
             System.IO.Path.GetTempPath(),
@@ -42,7 +42,7 @@ public class WaveReaderTests
     }
 
     [Fact]
-    public void Constructor_InvalidMagicBytes_ThrowsApplicationException()
+    public void ConstructorInvalidMagicBytesThrowsApplicationException()
     {
         short[] samples = [0, 100];
         var wav = WaveFixture.BuildNonRiff(samples);
@@ -57,7 +57,7 @@ public class WaveReaderTests
     }
 
     [Fact]
-    public void Constructor_StereoWav_ThrowsApplicationException()
+    public void ConstructorStereoWavThrowsApplicationException()
     {
         short[] samples = [0, 100, 200, 300]; // even count for stereo
         var wav = WaveFixture.BuildWav(16000, samples, numChannels: 2);
@@ -69,7 +69,7 @@ public class WaveReaderTests
     }
 
     [Fact]
-    public void Constructor_8BitWav_ThrowsApplicationException()
+    public void Constructor8BitWavThrowsApplicationException()
     {
         short[] samples = [0, 100];
         var wav = WaveFixture.BuildWav(16000, samples,
@@ -82,7 +82,7 @@ public class WaveReaderTests
     }
 
     [Fact]
-    public void Constructor_WithListMetadataChunkBeforeData_StillReadsSamples()
+    public void ConstructorWithListMetadataChunkBeforeDataStillReadsSamples()
     {
         short[] inputSamples = [42, -42];
         var wav = WaveFixture.BuildWavWithListChunk(16000, inputSamples);
@@ -99,7 +99,7 @@ public class WaveReaderTests
     }
 
     [Fact]
-    public void Constructor_44100HzMonoWav_Valid()
+    public void Constructor44100HzMonoWavValid()
     {
         short[] inputSamples = [100, 200];
         var wav = WaveFixture.BuildWav(44100, inputSamples);
@@ -114,7 +114,7 @@ public class WaveReaderTests
     }
 
     [Fact]
-    public void Constructor_EmptySampleData_ReturnsEmptySamplesArray()
+    public void ConstructorEmptySampleDataReturnsEmptySamplesArray()
     {
         var wav = WaveFixture.BuildWav(16000, []);
 

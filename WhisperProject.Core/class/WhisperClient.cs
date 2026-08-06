@@ -12,10 +12,13 @@ namespace WhisperProject.Class;
 
 public static class WhisperClient
 {
-    public static string IdentifiedLanguage { get; private set; } = "gamer";
+    public static string IdentifiedLanguage { get; private set; } = string.Empty;
     public static string FormatSrtTime(TimeSpan time)
     {
-        return time.ToString(@"hh\:mm\:ss\,fff", CultureInfo.InvariantCulture);
+        if (time < TimeSpan.Zero) time = TimeSpan.Zero;
+
+        int totalHours = (int)time.TotalHours;
+        return $"{totalHours:D2}:{time.Minutes:D2}:{time.Seconds:D2},{time.Milliseconds:D3}";
     }
 
     /// <summary>

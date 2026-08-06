@@ -95,11 +95,11 @@ class Program
             {
                 if (settings.UseVoiceActivityDetection)
                 {
-                    await WhisperClient.TranscribeVadAsync(outputPath, modelPath: settings.WhisperModelpath, language: settings.WhisperLanguage);
+                    await WhisperClient.TranscribeVadAsync(outputPath, modelPath: settings.WhisperModelPath, language: settings.WhisperLanguage);
                 }
                 else
                 {
-                    await WhisperClient.TranscribeAsync(outputPath, language: settings.WhisperLanguage, modelPath: settings.WhisperModelpath);
+                    await WhisperClient.TranscribeAsync(outputPath, language: settings.WhisperLanguage, modelPath: settings.WhisperModelPath);
                 }
                 Console.WriteLine(Path.GetDirectoryName(outputPath));
             }

@@ -202,7 +202,7 @@ public class TranscriptionService
         {
             await WhisperClient.TranscribeVadAsync(
                 outputPath,
-                modelPath: _settings.WhisperModelpath,
+                modelPath: _settings.WhisperModelPath,
                 language: _settings.WhisperLanguage);
         }
         else
@@ -210,7 +210,7 @@ public class TranscriptionService
             await WhisperClient.TranscribeAsync(
                 outputPath,
                 language: _settings.WhisperLanguage,
-                modelPath: _settings.WhisperModelpath);
+                modelPath: _settings.WhisperModelPath);
         }
         cancellationToken.ThrowIfCancellationRequested();
 

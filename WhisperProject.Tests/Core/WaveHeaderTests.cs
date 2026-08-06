@@ -32,13 +32,13 @@ public class WaveHeaderTests
     };
 
     [Fact]
-    public void Validate_ValidHeader_ReturnsTrue()
+    public void ValidateValidHeaderReturnsTrue()
     {
         Assert.True(ValidHeader().Validate());
     }
 
     [Fact]
-    public void Validate_44100HzMono16Bit_ReturnsTrue()
+    public void Validate44100HzMono16BitReturnsTrue()
     {
         var header = ValidHeader();
         header.SampleRate = 44100;
@@ -51,7 +51,7 @@ public class WaveHeaderTests
     [InlineData("ChunkID")]
     [InlineData("Format")]
     [InlineData("SubChunk1ID")]
-    public void Validate_BadMagicConstants_ReturnsFalse(string field)
+    public void ValidateBadMagicConstantsReturnsFalse(string field)
     {
         var header = ValidHeader();
         switch (field)
@@ -64,7 +64,7 @@ public class WaveHeaderTests
     }
 
     [Fact]
-    public void Validate_SubChunk1SizeNot16_ReturnsFalse()
+    public void ValidateSubChunk1SizeNot16ReturnsFalse()
     {
         var header = ValidHeader();
         header.SubChunk1Size = 12;
@@ -72,7 +72,7 @@ public class WaveHeaderTests
     }
 
     [Fact]
-    public void Validate_NonPcmAudioFormat_ReturnsFalse()
+    public void ValidateNonPcmAudioFormatReturnsFalse()
     {
         var header = ValidHeader();
         header.AudioFormat = 3; // IEEE float
@@ -80,7 +80,7 @@ public class WaveHeaderTests
     }
 
     [Fact]
-    public void Validate_Stereo_ReturnsFalse()
+    public void ValidateStereoReturnsFalse()
     {
         var header = ValidHeader();
         header.NumChannels = 2;
@@ -90,7 +90,7 @@ public class WaveHeaderTests
     }
 
     [Fact]
-    public void Validate_WrongByteRate_ReturnsFalse()
+    public void ValidateWrongByteRateReturnsFalse()
     {
         var header = ValidHeader();
         header.ByteRate = 16000; // should be 32000
@@ -98,7 +98,7 @@ public class WaveHeaderTests
     }
 
     [Fact]
-    public void Validate_WrongBlockAlign_ReturnsFalse()
+    public void ValidateWrongBlockAlignReturnsFalse()
     {
         var header = ValidHeader();
         header.BlockAlign = 4; // should be 2
@@ -106,7 +106,7 @@ public class WaveHeaderTests
     }
 
     [Fact]
-    public void Validate_BitsPerSampleNot16_ReturnsFalse()
+    public void ValidateBitsPerSampleNot16ReturnsFalse()
     {
         var header = ValidHeader();
         header.BitsPerSample = 8;

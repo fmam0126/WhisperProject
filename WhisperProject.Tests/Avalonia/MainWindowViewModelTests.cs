@@ -17,14 +17,14 @@ public class MainWindowViewModelTests
     // ── CanStart ──────────────────────────────────────────────────────────
 
     [Fact]
-    public void CanStart_Default_False()
+    public void CanStartDefaultFalse()
     {
         var vm = CreateVm();
         Assert.False(vm.CanStart);
     }
 
     [Fact]
-    public void CanStart_WhitespacePath_False()
+    public void CanStartWhitespacePathFalse()
     {
         var vm = CreateVm();
         vm.SelectedPath = "   ";
@@ -32,7 +32,7 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public void CanStart_ValidPath_True()
+    public void CanStartValidPathTrue()
     {
         var vm = CreateVm();
         vm.SelectedPath = @"C:\videos";
@@ -40,7 +40,7 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public void CanStart_ProcessingTrue_False()
+    public void CanStartProcessingTrueFalse()
     {
         var vm = CreateVm();
         vm.SelectedPath = @"C:\videos";
@@ -51,7 +51,7 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public void CanStart_PropertyChanged_RaisedWhenSelectedPathOrIsProcessingChanges()
+    public void CanStartPropertyChangedRaisedWhenSelectedPathOrIsProcessingChanges()
     {
         var vm = CreateVm();
         var canStartChanges = new List<string>();
@@ -76,7 +76,7 @@ public class MainWindowViewModelTests
     // ── Mode mutual exclusion ─────────────────────────────────────────────
 
     [Fact]
-    public void IsFolderMode_True_UnsetsIsFileMode()
+    public void IsFolderModeTrueUnsetsIsFileMode()
     {
         var vm = CreateVm();
         Assert.True(vm.IsFileMode);
@@ -88,7 +88,7 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public void IsFileMode_True_UnsetsIsFolderMode()
+    public void IsFileModeTrueUnsetsIsFolderMode()
     {
         var vm = CreateVm();
         vm.IsFolderMode = true;
@@ -101,7 +101,7 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public void SetModeAlreadyTrue_DoesNotTouchSibling()
+    public void SetModeAlreadyTrueDoesNotTouchSibling()
     {
         var vm = CreateVm();
         vm.IsFileMode = true; // already true
@@ -111,7 +111,7 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public void IsFolderMode_False_DoesNotReenableFile()
+    public void IsFolderModeFalseDoesNotReenableFile()
     {
         var vm = CreateVm();
         vm.IsFolderMode = true;
@@ -126,7 +126,7 @@ public class MainWindowViewModelTests
     // ── AppendLog ─────────────────────────────────────────────────────────
 
     [Fact]
-    public void AppendLog_TimestampedFormat()
+    public void AppendLogTimestampedFormat()
     {
         var vm = CreateVm();
         vm.AppendLog("hello world");
@@ -138,7 +138,7 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public void AppendLog_AppendsToExistingLog()
+    public void AppendLogAppendsToExistingLog()
     {
         var vm = CreateVm();
         vm.AppendLog("first");
@@ -152,7 +152,7 @@ public class MainWindowViewModelTests
     // ── StartProcessingAsync guard clauses ────────────────────────────────
 
     [Fact]
-    public async Task StartProcessingAsync_EmptyPath_ReturnsImmediately()
+    public async Task StartProcessingAsyncEmptyPathReturnsImmediately()
     {
         var vm = CreateVm();
         // No SelectedPath set
@@ -163,7 +163,7 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public async Task StartProcessingAsync_AlreadyProcessing_ReturnsImmediately()
+    public async Task StartProcessingAsyncAlreadyProcessingReturnsImmediately()
     {
         var vm = CreateVm();
         vm.SelectedPath = @"C:\videos";
@@ -178,7 +178,7 @@ public class MainWindowViewModelTests
     // ── CancelProcessing ──────────────────────────────────────────────────
 
     [Fact]
-    public void CancelProcessing_NoActiveService_AppendsCancellingLog()
+    public void CancelProcessingNoActiveServiceAppendsCancellingLog()
     {
         var vm = CreateVm();
         vm.CancelProcessing();
