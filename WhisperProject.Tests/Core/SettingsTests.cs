@@ -9,7 +9,7 @@ namespace WhisperProject.Tests.Core;
 public class SettingsTests
 {
     [Fact]
-    public void Defaults_ConcurrencyContextAndFlags_HaveExpectedValues()
+    public void DefaultsConcurrencyContextAndFlagsHaveExpectedValues()
     {
         var settings = SettingsFactory.Create();
 
@@ -25,7 +25,7 @@ public class SettingsTests
     }
 
     [Fact]
-    public void Defaults_AreMutable()
+    public void DefaultsAreMutable()
     {
         var settings = SettingsFactory.Create();
 

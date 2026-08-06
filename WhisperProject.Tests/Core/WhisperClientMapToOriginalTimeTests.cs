@@ -21,7 +21,7 @@ public class WhisperClientMapToOriginalTimeTests
     }
 
     [Fact]
-    public void EmptyTable_ReturnsInputTicksUnchanged()
+    public void EmptyTableReturnsInputTicksUnchanged()
     {
         var result = WhisperClient.MapToOriginalTime(1000, new List<VadTimeMapping>());
 
@@ -29,7 +29,7 @@ public class WhisperClientMapToOriginalTimeTests
     }
 
     [Fact]
-    public void ExactMatch_ReturnsOriginalTime()
+    public void ExactMatchReturnsOriginalTime()
     {
         var table = MakeTable(
             [0, 1000, 2000],
@@ -41,7 +41,7 @@ public class WhisperClientMapToOriginalTimeTests
     }
 
     [Fact]
-    public void BetweenPoints_Midpoint_LinearInterpolation()
+    public void BetweenPointsMidpointLinearInterpolation()
     {
         // processed  0     1000    2000
         // original   0     2000    4000
@@ -56,7 +56,7 @@ public class WhisperClientMapToOriginalTimeTests
     }
 
     [Fact]
-    public void BetweenPoints_QuarterPoint_LinearInterpolation()
+    public void BetweenPointsQuarterPointLinearInterpolation()
     {
         // processed  0     1000   2000
         // original   0     2000   4000
@@ -71,7 +71,7 @@ public class WhisperClientMapToOriginalTimeTests
     }
 
     [Fact]
-    public void AfterLastPoint_DeltaOffset()
+    public void AfterLastPointDeltaOffset()
     {
         // Last point: processed=2000, original=4000
         // t=2500 → delta=500 → 4000+500=4500
@@ -85,7 +85,7 @@ public class WhisperClientMapToOriginalTimeTests
     }
 
     [Fact]
-    public void BeforeFirstPoint_WhenFirstProcessedIsZero_ReturnsZero()
+    public void BeforeFirstPointWhenFirstProcessedIsZeroReturnsZero()
     {
         var table = MakeTable([0, 1000], [0, 2000]);
 
@@ -95,7 +95,7 @@ public class WhisperClientMapToOriginalTimeTests
     }
 
     [Fact]
-    public void BeforeFirstPoint_WhenFirstProcessedIsNotZero_ScalesByRatio()
+    public void BeforeFirstPointWhenFirstProcessedIsNotZeroScalesByRatio()
     {
         // First point: processed=1000, original=2000
         // t=500 → ratio 0.5 → orig=1000
@@ -107,7 +107,7 @@ public class WhisperClientMapToOriginalTimeTests
     }
 
     [Fact]
-    public void AdjacentEqualProcessedTimes_UsesPreviousOriginal()
+    public void AdjacentEqualProcessedTimesUsesPreviousOriginal()
     {
         // Processed: 0, 1000, 1000 (duplicate) — dedup logic removes the
         // duplicate before use, but the test sends the raw (duplicate) table
@@ -128,7 +128,7 @@ public class WhisperClientMapToOriginalTimeTests
     }
 
     [Fact]
-    public void SinglePointTable_BeforeFirst_ScalesByRatio()
+    public void SinglePointTableBeforeFirstScalesByRatio()
     {
         var table = MakeTable([500], [1000]);
 
@@ -139,7 +139,7 @@ public class WhisperClientMapToOriginalTimeTests
     }
 
     [Fact]
-    public void SinglePointTable_AfterLast_DeltaOffset()
+    public void SinglePointTableAfterLastDeltaOffset()
     {
         var table = MakeTable([500], [1000]);
 

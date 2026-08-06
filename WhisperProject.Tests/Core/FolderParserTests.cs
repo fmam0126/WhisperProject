@@ -11,7 +11,7 @@ namespace WhisperProject.Tests.Core;
 public class FolderParserTests
 {
     [Fact]
-    public void FindSourceFiles_MixedExtensions_ReturnsOnlyMediaFiles()
+    public void FindSourceFilesMixedExtensionsReturnsOnlyMediaFiles()
     {
         using var dir = new TempDir();
         dir.TouchFile("a.mp4");
@@ -30,7 +30,7 @@ public class FolderParserTests
     }
 
     [Fact]
-    public void FindSourceFiles_UppercaseExtensions_Included()
+    public void FindSourceFilesUppercaseExtensionsIncluded()
     {
         using var dir = new TempDir();
         dir.TouchFile("A.MP4");
@@ -43,7 +43,7 @@ public class FolderParserTests
     }
 
     [Fact]
-    public void FindSourceFiles_NestedSubdirectories_Recurses()
+    public void FindSourceFilesNestedSubdirectoriesRecurses()
     {
         using var dir = new TempDir();
         var sub = System.IO.Path.Combine(dir.Path, "sub", "deep");
@@ -57,7 +57,7 @@ public class FolderParserTests
     }
 
     [Fact]
-    public void FindSourceFiles_EmptyDirectory_ReturnsEmptyList()
+    public void FindSourceFilesEmptyDirectoryReturnsEmptyList()
     {
         using var dir = new TempDir();
 
@@ -67,7 +67,7 @@ public class FolderParserTests
     }
 
     [Fact]
-    public void FindSourceFiles_MissingDirectory_ThrowsDirectoryNotFoundException()
+    public void FindSourceFilesMissingDirectoryThrowsDirectoryNotFoundException()
     {
         var missingPath = System.IO.Path.Combine(
             System.IO.Path.GetTempPath(),
@@ -78,7 +78,7 @@ public class FolderParserTests
     }
 
     [Fact]
-    public void FindExistingSubtitles_MixedFiles_ReturnsOnlySrt()
+    public void FindExistingSubtitlesMixedFilesReturnsOnlySrt()
     {
         using var dir = new TempDir();
         dir.TouchFile("a.srt");
@@ -92,7 +92,7 @@ public class FolderParserTests
     }
 
     [Fact]
-    public void FindExistingSubtitles_EmptyDirectory_ReturnsEmptyList()
+    public void FindExistingSubtitlesEmptyDirectoryReturnsEmptyList()
     {
         using var dir = new TempDir();
 
@@ -102,7 +102,7 @@ public class FolderParserTests
     }
 
     [Fact]
-    public void FindExistingSubtitles_NestedSubdirectories_Recurses()
+    public void FindExistingSubtitlesNestedSubdirectoriesRecurses()
     {
         using var dir = new TempDir();
         var sub = System.IO.Path.Combine(dir.Path, "sub");

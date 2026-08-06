@@ -19,7 +19,7 @@ public static class SettingsFactory
             Port = 1234,
             GptPath = "/v1",
             GptModel = "test-model",
-            WhisperModelpath = ""
+            WhisperModelPath = ""
         };
     }
 }

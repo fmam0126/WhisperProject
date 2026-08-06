@@ -19,9 +19,7 @@
     <ScrollViewer>
         <StackPanel Margin="20" Spacing="4">
 
-            <!-- ════════════════════════════════════════════════════════ -->
-            <!-- LLM / API Settings                                        -->
-            <!-- ════════════════════════════════════════════════════════ -->
+            <!-- LLM / API Settings -->
             <TextBlock Text="LLM / API Settings"
                        FontWeight="Bold" FontSize="16"
                        Margin="{StaticResource SectionMargin}"/>
@@ -52,9 +50,7 @@
             <TextBox Text="{Binding TargetLanguage}" PlaceholderText="English"
                      Margin="{StaticResource FieldMargin}"/>
 
-            <!-- ════════════════════════════════════════════════════════ -->
-            <!-- Whisper Settings                                          -->
-            <!-- ════════════════════════════════════════════════════════ -->
+            <!-- Whisper Settings -->
             <TextBlock Text="Whisper Settings"
                        FontWeight="Bold" FontSize="16"
                        Margin="{StaticResource SectionMargin}"/>
@@ -71,9 +67,7 @@
                      PlaceholderText="e.g. 'en', 'no' (leave empty for auto-detect)"
                      Margin="{StaticResource FieldMargin}"/>
 
-            <!-- ════════════════════════════════════════════════════════ -->
-            <!-- Translation Mode (radio)                                  -->
-            <!-- ════════════════════════════════════════════════════════ -->
+            <!-- Translation Mode -->
             <TextBlock Text="Translation Mode"
                        FontWeight="Bold" FontSize="16"
                        Margin="{StaticResource SectionMargin}"/>
@@ -93,9 +87,7 @@
                 Per-Line Translation — translates each subtitle line independently
             </RadioButton>
 
-            <!-- ════════════════════════════════════════════════════════ -->
-            <!-- Voice Activity Detection (radio)                          -->
-            <!-- ════════════════════════════════════════════════════════ -->
+            <!-- Voice Activity Detection -->
             <TextBlock Text="Voice Activity Detection"
                        FontWeight="Bold" FontSize="16"
                        Margin="{StaticResource SectionMargin}"/>
@@ -115,9 +107,7 @@
                 Disabled — process the entire audio file
             </RadioButton>
 
-            <!-- ════════════════════════════════════════════════════════ -->
-            <!-- Voice Enhancement (radio)                                 -->
-            <!-- ════════════════════════════════════════════════════════ -->
+            <!-- Voice Enhancement -->
             <TextBlock Text="Voice Enhancement (DpdfNet)"
                        FontWeight="Bold" FontSize="16"
                        Margin="{StaticResource SectionMargin}"/>
@@ -145,9 +135,7 @@
             <TextBox Text="{Binding DpdfNetDownloadUrl}"
                      Margin="{StaticResource FieldMargin}"/>
 
-            <!-- ════════════════════════════════════════════════════════ -->
-            <!-- Performance Settings                                      -->
-            <!-- ════════════════════════════════════════════════════════ -->
+            <!-- Performance Settings -->
             <TextBlock Text="Performance"
                        FontWeight="Bold" FontSize="16"
                        Margin="{StaticResource SectionMargin}"/>
@@ -166,9 +154,7 @@
                 <TextBox Text="{Binding ContextSize}" Width="80"/>
             </StackPanel>
 
-            <!-- ════════════════════════════════════════════════════════ -->
-            <!-- System Prompt                                             -->
-            <!-- ════════════════════════════════════════════════════════ -->
+            <!-- System Prompt -->
             <TextBlock Text="System Prompt"
                        FontWeight="Bold" FontSize="16"
                        Margin="{StaticResource SectionMargin}"/>
@@ -181,9 +167,7 @@
                      TextWrapping="Wrap"
                      Margin="{StaticResource FieldMargin}"/>
 
-            <!-- ════════════════════════════════════════════════════════ -->
-            <!-- Actions                                                   -->
-            <!-- ════════════════════════════════════════════════════════ -->
+            <!-- Actions -->
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
                         Spacing="12" Margin="0,16,0,8">
                 <Button Content="OK" Width="80"

@@ -11,7 +11,7 @@ namespace WhisperProject.Tests.Core;
 public class WhisperClientFormatSrtTimeTests
 {
     [Fact]
-    public void FormatSrtTime_Zero_ReturnsMidnight()
+    public void FormatSrtTimeZeroReturnsMidnight()
     {
         var result = WhisperClient.FormatSrtTime(TimeSpan.Zero);
         Assert.Equal("00:00:00,000", result);
@@ -23,21 +23,21 @@ public class WhisperClientFormatSrtTimeTests
     [InlineData(10, "00:00:00,010")]
     [InlineData(100, "00:00:00,100")]
     [InlineData(999, "00:00:00,999")]
-    public void FormatSrtTime_Milliseconds_ThreeDigitPadded(int ms, string expected)
+    public void FormatSrtTimeMillisecondsThreeDigitPadded(int ms, string expected)
     {
         var result = WhisperClient.FormatSrtTime(TimeSpan.FromMilliseconds(ms));
         Assert.Equal(expected, result);
     }
 
     [Fact]
-    public void FormatSrtTime_MinutesAndSeconds()
+    public void FormatSrtTimeMinutesAndSeconds()
     {
         var result = WhisperClient.FormatSrtTime(new TimeSpan(0, 1, 2));
         Assert.Equal("00:01:02,000", result);
     }
 
     [Fact]
-    public void FormatSrtTime_MillisecondsComponent()
+    public void FormatSrtTimeMillisecondsComponent()
     {
         // 1s 2s 3ms → "00:01:02,003"
         var result = WhisperClient.FormatSrtTime(new TimeSpan(0, 0, 1, 2, 3));
@@ -45,34 +45,32 @@ public class WhisperClientFormatSrtTimeTests
     }
 
     [Fact]
-    public void FormatSrtTime_HoursIncluded()
+    public void FormatSrtTimeHoursIncluded()
     {
         var result = WhisperClient.FormatSrtTime(new TimeSpan(1, 2, 3));
         Assert.Equal("01:02:03,000", result);
     }
 
     [Fact]
-    public void FormatSrtTime_OverTwentyFourHours_RollsIntoDayComponent()
+    public void FormatSrtTimeOverTwentyFourHoursShouldBeIncluded()
     {
         // The 'hh' specifier strips days. 25h → 1h.
         var result = WhisperClient.FormatSrtTime(new TimeSpan(25, 0, 0));
-        Assert.Equal("01:00:00,000", result);
+        Assert.Equal("25:00:00,000", result);
     }
 
     [Fact]
-    public void FormatSrtTime_Negative_ReturnsZeroedTime()
+    public void FormatSrtTimeNegativeReturnsZeroedTime()
     {
-        // The custom format string strips the sign; negative spans render
-        // as if they were positive.
         var result = WhisperClient.FormatSrtTime(TimeSpan.FromSeconds(-1));
-        Assert.Equal("00:00:01,000", result);
+        Assert.Equal("00:00:00,000", result);
     }
 
     [Fact]
-    public void FormatSrtTime_LargeValue_IncludesOnlyHoursRemainder()
+    public void FormatSrtTimeLargeValueReturnsTotalHours()
     {
         // 1 day + 2h 30m → 02:30:00,000
         var result = WhisperClient.FormatSrtTime(new TimeSpan(1, 2, 30, 0));
-        Assert.Equal("02:30:00,000", result);
+        Assert.Equal("26:30:00,000", result);
     }
 }

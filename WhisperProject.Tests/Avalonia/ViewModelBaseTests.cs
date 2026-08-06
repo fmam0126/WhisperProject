@@ -30,7 +30,7 @@ public class ViewModelBaseTests
     }
 
     [Fact]
-    public void SetProperty_NewValue_RaisesAndReturnsTrue()
+    public void SetPropertyNewValueRaisesAndReturnsTrue()
     {
         var vm = new TestVm();
         var raised = new List<string>();
@@ -45,7 +45,7 @@ public class ViewModelBaseTests
     }
 
     [Fact]
-    public void SetProperty_SameValue_DoesNotRaiseReturnsFalse()
+    public void SetPropertySameValueDoesNotRaiseReturnsFalse()
     {
         var vm = new TestVm();
         vm.TrySet("same");
@@ -59,7 +59,7 @@ public class ViewModelBaseTests
     }
 
     [Fact]
-    public void OnPropertyChanged_ExplicitName_FiresWithThatName()
+    public void OnPropertyChangedExplicitNameFiresWithThatName()
     {
         var vm = new TestVm();
         var raised = new List<string>();
@@ -72,7 +72,7 @@ public class ViewModelBaseTests
     }
 
     [Fact]
-    public void OnPropertyChanged_DefaultName_UsesCallerMemberName()
+    public void OnPropertyChangedDefaultNameUsesCallerMemberName()
     {
         var vm = new TestVm();
         var raised = new List<string>();

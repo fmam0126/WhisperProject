@@ -155,17 +155,17 @@ public class OptionsViewModel : ViewModelBase
         set => SetProperty(ref _systemPrompt, value);
     }
 
-    // ── Radio-button groups (mutually exclusive booleans) ───────────────
+    // Radio-button groups (mutually exclusive booleans)
     //
     //  RadioButton in Avalonia doesn't natively bind to an enum or
     //  automatically uncheck siblings. We emulate the behaviour with three
     //  bool properties per group where _exactly one_ is true at all times.
     //
-    //  Group 1 – Translation mode
-    //  Group 2 – Voice Activity Detection
-    //  Group 3 – DpdfNet voice enhancement
+    //  Group 1 - Translation mode
+    //  Group 2 - Voice Activity Detection
+    //  Group 3 - DpdfNet voice enhancement
 
-    // ── Translation mode ────────────────────────────────────────────────
+    //Translation mode
 
     private bool _useContextTranslation = true;
 
@@ -199,7 +199,7 @@ public class OptionsViewModel : ViewModelBase
         }
     }
 
-    // ── Voice Activity Detection ────────────────────────────────────────
+    // Voice Activity Detection 
 
     private bool _vadEnabled = true;
 
@@ -233,7 +233,7 @@ public class OptionsViewModel : ViewModelBase
         }
     }
 
-    // ── DpdfNet voice enhancement ───────────────────────────────────────
+    // DpdfNet voice enhancement
 
     private bool _dpdfNetEnabled;
 
@@ -267,7 +267,7 @@ public class OptionsViewModel : ViewModelBase
         }
     }
 
-    // ── DpdfNet model path ──────────────────────────────────────────────
+    // DpdfNet model path
 
     private string _dpdfNetModelPath = string.Empty;
 
@@ -294,7 +294,7 @@ public class OptionsViewModel : ViewModelBase
         set => SetProperty(ref _dpdfNetDownloadUrl, value);
     }
 
-    // ── Helpers ─────────────────────────────────────────────────────────
+    // Helpers 
 
     /// <summary>
     /// Parses <see cref="Port"/> to an integer, defaulting to 1234 on invalid input.
@@ -316,7 +316,7 @@ public class OptionsViewModel : ViewModelBase
     private uint ParseContextSize() =>
         uint.TryParse(ContextSize, out var value) && value >= 1 ? value : 10;
 
-    // ── Load / Save ─────────────────────────────────────────────────────
+    // Load / Save 
 
     /// <summary>
     /// Populates the ViewModel from a <see cref="Settings"/> model
@@ -331,7 +331,7 @@ public class OptionsViewModel : ViewModelBase
         GptPath = settings.GptPath;
         GptModel = settings.GptModel;
         TargetLanguage = settings.TargetLanguage;
-        WhisperModelPath = settings.WhisperModelpath;
+        WhisperModelPath = settings.WhisperModelPath;
         WhisperLanguage = settings.WhisperLanguage ?? string.Empty;
         Concurrency = settings.Concurrency.ToString();
         ContextSize = settings.ContextSize.ToString();
@@ -369,7 +369,7 @@ public class OptionsViewModel : ViewModelBase
             GptPath = GptPath,
             GptModel = GptModel,
             TargetLanguage = TargetLanguage,
-            WhisperModelpath = WhisperModelPath,
+            WhisperModelPath = WhisperModelPath,
             WhisperLanguage = WhisperLanguage,
             Concurrency = ParseConcurrency(),
             ContextSize = ParseContextSize(),
