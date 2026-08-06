@@ -17,9 +17,7 @@
 
     <DockPanel Margin="16">
 
-        <!-- ════════════════════════════════════════════════════════════ -->
-        <!-- TOP: Mode, path & buttons                                     -->
-        <!-- ════════════════════════════════════════════════════════════ -->
+        <!-- TOP: Mode, path & buttons -->
         <StackPanel DockPanel.Dock="Top" Spacing="8">
 
             <!-- Mode selectors (radio buttons) -->
@@ -73,9 +71,7 @@
                        FontWeight="Bold" Margin="0,4,0,0"/>
         </StackPanel>
 
-        <!-- ════════════════════════════════════════════════════════════ -->
-        <!-- CENTER: scrollable output log                                 -->
-        <!-- ════════════════════════════════════════════════════════════ -->
+        <!-- CENTER: scrollable output log -->
         <ScrollViewer x:Name="LogScrollViewer"
                       VerticalScrollBarVisibility="Auto">
             <TextBox Text="{Binding LogOutput}"
