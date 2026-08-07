@@ -52,6 +52,11 @@ public class SubtitleTranslator
     /// </summary>
     public string SystemPrompt { get; set; } = "You are a helpful assistant for translating video subtitles. You receive text in the format of a subtitle file and you translate it to the target language without adding any comments or explanations, just output the translated text. Always keep the formatting of the original text.";
     /// <summary>
+    /// The language identified by Whisper during transcription. Set by the caller
+    /// after transcription completes so the translator can include it in prompts.
+    /// </summary>
+    public string SourceLanguage { get; set; } = string.Empty;
+    /// <summary>
     /// Lazily initialized <see cref="AIAgent"/> instance used to send prompts to the LLM. It is created on first use and reused for subsequent translation requests.
     /// </summary>
     private AIAgent? _agent;
@@ -92,88 +97,67 @@ public class SubtitleTranslator
     /// <returns></returns>
     public async Task TranslateSrtAsync(string srtFileName, string outputPath)
     {
-        var semaphore = new SemaphoreSlim((int)Concurrency); // Limit Concurrency to 4
+        var semaphore = new SemaphoreSlim((int)Concurrency);
 
+        using FileStream fileStream = File.OpenRead(srtFileName);
+        SubtitleParserResultModel? result = SubtitleParser.ParseStream(fileStream, Encoding.UTF8, SubtitleFormatType.SubRip);
 
-        using (FileStream fileStream = File.OpenRead(srtFileName))
+        if (result?.Subtitles is null || result.Subtitles.Count == 0)
         {
-            // Try to parse with one specific parser using default configuration
-            SubtitleParserResultModel? result = SubtitleParser.ParseStream(fileStream, Encoding.UTF8, SubtitleFormatType.SubRip);
-            List<string> lines = new List<string>();
-            List<int> startTimes = new List<int>();
-            List<int> endTimes = new List<int>();
+            Console.WriteLine("No subtitles found to translate.");
+            return;
+        }
 
-            if (result?.Subtitles != null)
+        var subtitleItems = result.Subtitles;
+
+        ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
+            .AddRetry(new RetryStrategyOptions
             {
-                // Create an instance of builder that exposes various extensions for adding resilience strategies
-                ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
-                    .AddRetry(new RetryStrategyOptions
-                    {
-                        MaxRetryAttempts = 3,
-                        OnRetry = static args =>
-                        {
-                            Console.WriteLine($"Retry {args.AttemptNumber} triggered due to {args.Outcome.Exception?.Message}");
-                            return default;
-                        }
-
-                    }) // Add retry 
-                    .AddTimeout(TimeSpan.FromMinutes(5)) // Add 5 minute timeout
-                    .Build(); // Builds the resilience pipeline
-
-
-                int Index = 0;
-                int srtIndex = 1;
-                string? translatedLine = string.Empty;
-                lines = result.Subtitles.SelectMany(d => d.Lines).ToList();
-                startTimes = result.Subtitles.Select(d => d.StartTime).ToList();
-                endTimes = result.Subtitles.Select(d => d.EndTime).ToList();
-                using var writer = new StreamWriter($"{outputPath}\\{Path.GetFileNameWithoutExtension(srtFileName)}.{TargetLanguage.ToUpper()}.srt");
-
-
-                var translatedLines = new ConcurrentBag<(int Index, string Data)>();
-                var translationTask = lines.Select(async (line, index) =>
+                MaxRetryAttempts = 3,
+                OnRetry = static args =>
                 {
-                    await semaphore.WaitAsync();
-                    try
-                    {
-                        string processedText = await pipeline.ExecuteAsync(async token => { return await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), token); });
-                        translatedLines.Add((index, processedText));
-                        Console.WriteLine(processedText.Trim().ReplaceLineEndings(string.Empty));
-                        await Task.Delay(50);
-                    }
-
-                    finally
-                    {
-                        semaphore.Release();
-                    }
-                });
-
-                await Task.WhenAll(translationTask);
-
-                foreach (var line in translatedLines.OrderBy(r => r.Index))
-                {
-                    await writer.WriteLineAsync(srtIndex.ToString());
-                    await writer.WriteLineAsync($"{WhisperClient.FormatSrtTime(TimeSpan.FromMilliseconds(startTimes[Index]))} --> {WhisperClient.FormatSrtTime(TimeSpan.FromMilliseconds(endTimes[Index]))}");
-                    await writer.WriteLineAsync(line.Data.Trim().ReplaceLineEndings(string.Empty));
-                    await writer.WriteLineAsync("");
-                    srtIndex++;
-                    Index++;
+                    Console.WriteLine($"Retry {args.AttemptNumber} triggered due to {args.Outcome.Exception?.Message}");
+                    return default;
                 }
+            })
+            .AddTimeout(TimeSpan.FromMinutes(5))
+            .Build();
 
+        using var writer = new StreamWriter(
+            $"{outputPath}\\{Path.GetFileNameWithoutExtension(srtFileName)}.{TargetLanguage.ToUpper()}.srt");
 
-                // foreach (var line in lines)
-                // {
-                //     await writer.WriteLineAsync(srtIndex.ToString());
-                //     await writer.WriteLineAsync($"{WhisperClient.FormatSrtTime(TimeSpan.FromMilliseconds(startTimes[Index]))} --> {WhisperClient.FormatSrtTime(TimeSpan.FromMilliseconds(endTimes[Index]))}");
-                //     translatedLine = await SendToLLMAsync(PromptBuilder(line, WhisperClient.IdentifiedLanguage, TargetLanguage), UrlBuilder(Url));
-                //     await writer.WriteLineAsync(translatedLine.Trim().ReplaceLineEndings(string.Empty));
-                //     Console.WriteLine(translatedLine.Trim().ReplaceLineEndings(string.Empty));
-                //     await writer.WriteLineAsync("");
-                //     srtIndex++;
-                //     Index++;
-                // }
+        var translatedEntries = new ConcurrentBag<(int Index, string TranslatedText)>();
+
+        var translationTask = subtitleItems.Select(async (item, index) =>
+        {
+            await semaphore.WaitAsync();
+            try
+            {
+                // Join multi-line entries into a single string for translation
+                // so the LLM preserves the semantic grouping of the subtitle
+                string combinedText = string.Join("\n", item.Lines);
+                string processedText = await pipeline.ExecuteAsync(
+                    async token => await SendToLLMAsync(
+                        PromptBuilder(combinedText, SourceLanguage, TargetLanguage), token));
+                translatedEntries.Add((index, processedText));
+                Console.WriteLine(processedText.Trim().ReplaceLineEndings(string.Empty));
             }
+            finally
+            {
+                semaphore.Release();
+            }
+        });
 
+        await Task.WhenAll(translationTask);
+
+        foreach (var entry in translatedEntries.OrderBy(r => r.Index))
+        {
+            var item = subtitleItems[entry.Index];
+            await writer.WriteLineAsync((entry.Index + 1).ToString());
+            await writer.WriteLineAsync(
+                $"{WhisperClient.FormatSrtTime(TimeSpan.FromMilliseconds(item.StartTime))} --> {WhisperClient.FormatSrtTime(TimeSpan.FromMilliseconds(item.EndTime))}");
+            await writer.WriteLineAsync(entry.TranslatedText.Trim().ReplaceLineEndings(string.Empty));
+            await writer.WriteLineAsync("");
         }
     }
     /// <summary>
@@ -232,13 +216,23 @@ public class SubtitleTranslator
                 // Collect all lines from this batch with global numbering
                 var allLines = batch.SelectMany(item => item.Lines).ToList();
 
-                string prompt = BuildBatchPrompt(allLines, WhisperClient.IdentifiedLanguage, TargetLanguage);
+                string prompt = BuildBatchPrompt(allLines, SourceLanguage, TargetLanguage);
                 string responseText = await pipeline.ExecuteAsync(
                     async token => await SendToLLMAsync(prompt, token));
 
                 // Parse the numbered response back into individual lines
                 var translatedLines = ParseNumberedResponse(responseText, allLines.Count);
                 translatedBatches.Add((batchIndex, translatedLines));
+
+                // Warn if the LLM returned fewer lines than expected —
+                // padded entries will produce blank subtitles
+                int parsedCount = translatedLines.Count(s => s.Length > 0);
+                if (parsedCount < allLines.Count)
+                {
+                    Console.WriteLine(
+                        $"Warning: batch {batchIndex} — LLM returned {parsedCount}/{allLines.Count} " +
+                        $"non-empty translated lines. {allLines.Count - parsedCount} entries may be blank.");
+                }
 
                 foreach (var line in translatedLines)
                     Console.WriteLine(line.Trim().ReplaceLineEndings(string.Empty));
@@ -257,7 +251,7 @@ public class SubtitleTranslator
 
         int srtIndex = 1;
         int globalLineIndex = 0;
-        // Produces blank subtitle entries if the LLM returned fewer lines than expected. - needs fixing
+
         foreach (var batch in batches)
         {
             foreach (var item in batch)

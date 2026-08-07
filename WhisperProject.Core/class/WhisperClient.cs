@@ -12,7 +12,6 @@ namespace WhisperProject.Class;
 
 public static class WhisperClient
 {
-    public static string IdentifiedLanguage { get; private set; } = string.Empty;
     public static string FormatSrtTime(TimeSpan time)
     {
         if (time < TimeSpan.Zero) time = TimeSpan.Zero;
@@ -27,64 +26,38 @@ public static class WhisperClient
     /// </summary>
     /// <param name="inputFileName">The path to the input audio file</param>
     /// <param name="modelPath">The path to the Whisper model file</param>
-    /// <param name="language">The language of the audio file</param>
-    /// <returns></returns>
-    public static async Task TranscribeAsync(string inputFileName, string? modelPath = null, string? language = null)
+    /// <returns>The language identified by Whisper, or null if no segments were produced.</returns>
+    public static async Task<string?> TranscribeAsync(string inputFileName, string? modelPath = null, string? language = null)
     {
-        // We declare three variables which we will use later, ggmlType, modelFileName and wavFileName
         var ggmlType = GgmlType.LargeV2;
         var modelFileName = string.IsNullOrWhiteSpace(modelPath) ? "ggml-largev2.bin" : modelPath;
-        // var vadModelFileName = "./ggml-silero-v6.2.0.bin";
         var wavFileName = inputFileName;
 
         using var whisperLogger = LogProvider.AddConsoleLogging(WhisperLogLevel.Debug);
 
-        // This section detects whether the "ggml-largev3.bin" file exists in our project disk. If it doesn't, it downloads it from the internet
         if (!File.Exists(modelFileName))
         {
             await DownloadModel(modelFileName, ggmlType);
         }
 
-        // This section creates the whisperFactory object which is used to create the processor object.
         using var whisperFactory = WhisperFactory.FromPath(modelFileName);
 
-        // This section creates the processor object which is used to process the audio file, it uses language `auto` to detect the language of the audio file.
         var builder = whisperFactory.CreateBuilder()
             .WithThreads(Environment.ProcessorCount)
             .WithLanguage(string.IsNullOrWhiteSpace(language) ? "auto" : language);
 
-
         using var processor = builder.Build();
 
-
-
         using var fileStream = File.OpenRead(wavFileName);
-        // using var writer = new StreamWriter($"{Path.GetDirectoryName(wavFileName)}\\{Path.GetFileNameWithoutExtension(wavFileName)}.srt");
-        // int index = 1;
-
-        var results = new List<object>();
-        // This section processes the audio file and prints the results (start time, end time and text) to the console.
-        // await foreach (var result in processor.ProcessAsync(fileStream))
-        // {
-        //     results.Add(result);
-        //     Console.WriteLine($"{result.Start}->{result.End}: {result.Text}");
-        //     IdentifiedLanguage = result.Language;
-        //     await writer.WriteLineAsync(index.ToString());
-        //     await writer.WriteLineAsync($"{FormatSrtTime(result.Start)} --> {FormatSrtTime(result.End)}");
-        //     await writer.WriteLineAsync(result.Text.Trim());
-        //     await writer.WriteLineAsync();
-
-        //     index++;
-        // }
-
 
         var segments = new List<SegmentData>();
+        string? identifiedLanguage = null;
 
         try
         {
             await foreach (var result in processor.ProcessAsync(fileStream))
             {
-                IdentifiedLanguage = result.Language;
+                identifiedLanguage = result.Language;
                 segments.Add(result);
                 Console.WriteLine($"{result.Start}->{result.End}: {result.Text}");
             }
@@ -97,7 +70,7 @@ public static class WhisperClient
         if (segments.Count == 0)
         {
             Console.WriteLine("No subtitles were produced. Skipping SRT write.");
-            return;
+            return identifiedLanguage;
         }
 
         var srtPath = Path.ChangeExtension(inputFileName, ".srt");
@@ -120,6 +93,8 @@ public static class WhisperClient
         {
             Console.WriteLine($"Failed to write SRT file: {ex}");
         }
+
+        return identifiedLanguage;
     }
 
     /// <summary>
@@ -129,8 +104,8 @@ public static class WhisperClient
     /// <param name="inputFileName">The path to the input audio file</param>
     /// <param name="modelPath">The path to the Whisper model file</param>
     /// <param name="language">The language of the audio file</param>
-    /// <returns></returns>
-    public static async Task TranscribeVadAsync(string inputFileName, string? modelPath = null, string? language = null)
+    /// <returns>The language identified by Whisper, or null if no speech was detected.</returns>
+    public static async Task<string?> TranscribeVadAsync(string inputFileName, string? modelPath = null, string? language = null)
     {
         var ggmlType = GgmlType.LargeV2;
         var modelFileName = string.IsNullOrWhiteSpace(modelPath) ? "ggml-largev2.bin" : modelPath;
@@ -178,7 +153,7 @@ public static class WhisperClient
         if (vadSegments.Count == 0)
         {
             Console.WriteLine("No speech detected. Skipping transcription.");
-            return;
+            return null;
         }
 
         const double silenceLenSec = 0.1;
@@ -257,11 +232,12 @@ public static class WhisperClient
             .Build();
 
         var subtitles = new List<(TimeSpan Start, TimeSpan End, string Text)>();
+        string? identifiedLanguage = null;
         try
         {
             await foreach (var result in processor.ProcessAsync(filteredSamples.AsMemory(0, offset)))
             {
-                IdentifiedLanguage = result.Language;
+                identifiedLanguage = result.Language;
                 var originalStart = MapToOriginalTime(result.Start.Ticks, mappingTable);
                 var originalEnd = MapToOriginalTime(result.End.Ticks, mappingTable);
                 Console.WriteLine($"{originalStart}->{originalEnd}: {result.Text}");
@@ -276,7 +252,7 @@ public static class WhisperClient
         if (subtitles.Count == 0)
         {
             Console.WriteLine("No subtitles were produced. Skipping SRT write.");
-            return;
+            return identifiedLanguage;
         }
 
         var srtPath = Path.ChangeExtension(inputFileName, ".srt");
@@ -299,6 +275,8 @@ public static class WhisperClient
         {
             Console.WriteLine($"Failed to write SRT file: {ex}");
         }
+
+        return identifiedLanguage;
     }
     /// <summary>
     /// Maps a processed time (after VAD filtering) back to the original time in the audio file using a mapping table.
