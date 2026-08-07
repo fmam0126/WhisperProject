@@ -93,14 +93,16 @@ class Program
             Console.WriteLine($"sending {Path.GetFileName(item)} to Whisper");
             try
             {
+                string? identifiedLanguage;
                 if (settings.UseVoiceActivityDetection)
                 {
-                    await WhisperClient.TranscribeVadAsync(outputPath, modelPath: settings.WhisperModelPath, language: settings.WhisperLanguage);
+                    identifiedLanguage = await WhisperClient.TranscribeVadAsync(outputPath, modelPath: settings.WhisperModelPath, language: settings.WhisperLanguage);
                 }
                 else
                 {
-                    await WhisperClient.TranscribeAsync(outputPath, language: settings.WhisperLanguage, modelPath: settings.WhisperModelPath);
+                    identifiedLanguage = await WhisperClient.TranscribeAsync(outputPath, language: settings.WhisperLanguage, modelPath: settings.WhisperModelPath);
                 }
+                subtitleTranslator.SourceLanguage = identifiedLanguage ?? string.Empty;
                 Console.WriteLine(Path.GetDirectoryName(outputPath));
             }
             catch (Exception ex)
@@ -111,7 +113,7 @@ class Program
 
             Console.WriteLine($"Finished processing {Path.GetFileName(item)}");
             Console.WriteLine("--------------------------------------------------");
-            Console.WriteLine("Tranlating subtitles...");
+            Console.WriteLine("Translating subtitles...");
             try
             {
                 string srtFileName = $"{Path.GetDirectoryName(outputPath)}\\{Path.GetFileNameWithoutExtension(outputPath)}.srt";

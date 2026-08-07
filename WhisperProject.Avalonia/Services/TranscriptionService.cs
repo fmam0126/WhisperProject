@@ -198,20 +198,22 @@ public class TranscriptionService
 
         // Step 3: Transcribe WAV to SRT via Whisper
         ReportProgress("  Transcribing audio to text...");
+        string? identifiedLanguage;
         if (_settings.UseVoiceActivityDetection)
         {
-            await WhisperClient.TranscribeVadAsync(
+            identifiedLanguage = await WhisperClient.TranscribeVadAsync(
                 outputPath,
                 modelPath: _settings.WhisperModelPath,
                 language: _settings.WhisperLanguage);
         }
         else
         {
-            await WhisperClient.TranscribeAsync(
+            identifiedLanguage = await WhisperClient.TranscribeAsync(
                 outputPath,
                 language: _settings.WhisperLanguage,
                 modelPath: _settings.WhisperModelPath);
         }
+        subtitleTranslator.SourceLanguage = identifiedLanguage ?? string.Empty;
         cancellationToken.ThrowIfCancellationRequested();
 
         // Step 4: Translate the generated SRT via the LLM
