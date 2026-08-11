@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -110,23 +111,31 @@ public partial class MainWindow : Window
         {
             // Copy confirmed values back to the live options
             _optionsViewModel.LoadFromSettings(clone.ToSettings(string.Empty));
+
+            // Persist to appsettings.json so settings survive restarts
+            SaveSettingsToFile(_optionsViewModel);
         }
     }
 
     /// <summary>
-    /// Attempts to load settings from <c>appsettings.json</c> next to the
-    /// executable. Falls back to sensible defaults when the file is missing,
-    /// malformed, or unreadable.
+    /// Attempts to load settings from <c>appsettings.json</c> in the specified
+    /// directory (or the current directory if null). Falls back to sensible
+    /// defaults when the file is missing, malformed, or unreadable.
     /// </summary>
+    /// <param name="configDirectory">
+    /// Directory containing <c>appsettings.json</c>. When null, defaults to
+    /// <see cref="Directory.GetCurrentDirectory()"/>.
+    /// </param>
     /// <returns>A populated <see cref="OptionsViewModel"/> instance.</returns>
-    private static OptionsViewModel LoadSettingsOrDefaults()
+    internal static OptionsViewModel LoadSettingsOrDefaults(string? configDirectory = null)
     {
         var viewModel = new OptionsViewModel();
+        var directory = configDirectory ?? Directory.GetCurrentDirectory();
 
         try
         {
             var configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
+                .SetBasePath(directory)
                 .AddJsonFile("appsettings.json", optional: true)
                 .Build();
 
@@ -144,6 +153,45 @@ public partial class MainWindow : Window
         }
 
         return viewModel; // already has sensible defaults
+    }
+
+    /// <summary>
+    /// Writes the current options to <c>appsettings.json</c> in the specified
+    /// directory (or the current directory if null) so they are restored the
+    /// next time the application launches.
+    /// </summary>
+    /// <param name="viewModel">The options ViewModel to persist.</param>
+    /// <param name="configDirectory">
+    /// Directory to write <c>appsettings.json</c> into. When null, defaults to
+    /// <see cref="Directory.GetCurrentDirectory()"/>.
+    /// </param>
+    internal static void SaveSettingsToFile(OptionsViewModel viewModel, string? configDirectory = null)
+    {
+        var directory = configDirectory ?? Directory.GetCurrentDirectory();
+
+        try
+        {
+            var settings = viewModel.ToSettings(string.Empty);
+
+            // Wrap in the { "Settings": { ... } } shape expected by ConfigurationBuilder
+            var config = new Dictionary<string, object>
+            {
+                ["Settings"] = settings
+            };
+
+            var json = JsonSerializer.Serialize(config, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+
+            var filePath = Path.Combine(directory, "appsettings.json");
+            File.WriteAllText(filePath, json);
+        }
+        catch (Exception ex)
+        {
+            // Best-effort — don't crash the UI over a file write failure
+            Console.WriteLine($"Warning: Could not save settings to appsettings.json: {ex.Message}");
+        }
     }
 }
 
