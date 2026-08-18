@@ -482,3 +482,5 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+/WhisperProject.Core/sherpa-onnx-whisper-tiny.tar.bz2
+/WhisperProject.Core/qwen3asr.tar.bz2
