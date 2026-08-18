@@ -2,6 +2,7 @@
 using System.Security;
 using System.Security.Cryptography.X509Certificates;
 using WhisperProject.Class;
+using WhisperProject.Core;
 using WhisperProject.Models;
 
 namespace WhisperProject;
@@ -52,11 +53,11 @@ class Program
             SystemPrompt = settings.SystemPrompt
         };
 
-
+        string inputPath = Path.EndsInDirectorySeparator(settings.InputPath) ? settings.InputPath : settings.InputPath + Path.DirectorySeparatorChar;
         List<string> sourceFiles;
-        FileConvert fileConvert = new FileConvert(settings.InputPath);
+        FileConvert fileConvert = new FileConvert(inputPath);
 
-        sourceFiles = FolderParser.FindSourceFiles(settings.InputPath);
+        sourceFiles = FolderParser.FindSourceFiles(inputPath);
         foreach (var item in sourceFiles)
         {
             string outputPath;
@@ -91,6 +92,16 @@ class Program
 
             // transcribe the file and save the srt in the same directory as the original file
             Console.WriteLine($"sending {Path.GetFileName(item)} to Whisper");
+            //try
+            //{
+
+            //    await Qwen3Asr.RunQwen3Asr(outputPath, Directory.GetCurrentDirectory());
+            //}
+            //catch (System.Exception ex)
+            //{
+            //    Console.WriteLine($"Error transcribing {Path.GetFileName(item)}: {ex.Message}");
+            //    continue;
+            //}
             try
             {
                 string? identifiedLanguage;

@@ -6,6 +6,8 @@
 *.onnx
 ggml*.bin
 appsettings.json
+sherpa-onnx-whisper-tiny/
+qwen3/
 # dotenv files
 .env
 # User-specific files

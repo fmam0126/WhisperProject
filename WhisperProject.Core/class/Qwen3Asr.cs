@@ -1,4 +1,7 @@
-﻿using SherpaOnnx;
+﻿using SharpCompress.Archives;
+using SharpCompress.Readers;
+using SharpCompress.Writers;
+using SherpaOnnx;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,36 +11,80 @@ namespace WhisperProject.Core
 {
     internal class Qwen3Asr
     {
-        public static async Task Run()
+        /// <summary>
+        /// Runs the Qwen3 ASR model on the specified audio file using the given model directory.
+        /// </summary>
+        /// <param name="audioFilePath">The path to the audio file.</param>
+        /// <param name="modelDir">The directory containing the model files.</param>
+        /// <returns>the detected spoken language</returns>
+        public static async Task<string> RunQwen3Asr(string audioFilePath, string modelDir)
         {
             // https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2
             // please download model files from
             // https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models
             var config = new OfflineRecognizerConfig();
-            config.ModelConfig.Qwen3Asr.ConvFrontend = "./sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25/conv_frontend.onnx";
-            config.ModelConfig.Qwen3Asr.Encoder = "./sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25/encoder.int8.onnx";
-            config.ModelConfig.Qwen3Asr.Decoder = "./sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25/decoder.int8.onnx";
-            config.ModelConfig.Qwen3Asr.Tokenizer = "./sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25/tokenizer";
+            if (audioFilePath == null)
+            {
+                throw new ArgumentNullException(nameof(audioFilePath));
+            }
+            if (modelDir == null)
+            {
+                throw new ArgumentNullException(nameof(modelDir));
+            }
+            if (!File.Exists(Path.Combine(modelDir, "qwen3", "conv_frontend.onnx")) ||
+                !File.Exists(Path.Combine(modelDir, "qwen3", "encoder.int8.onnx")) ||
+                !File.Exists(Path.Combine(modelDir, "qwen3", "decoder.int8.onnx")) ||
+                !Directory.Exists(Path.Combine(modelDir, "qwen3", "tokenizer")))
+            {
+                if (File.Exists($"{modelDir}/qwen3asr.tar.bz2"))
+                {
+                    Console.WriteLine("Model archive already exists. Skipping download.");
+                }
+                else
+                {
+                    Console.WriteLine("Downloading model files...");
+                    await DownloadModel("https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2", Path.Combine(modelDir, "qwen3asr.tar.bz2"));
+                }
+                
+                //Console.WriteLine("Extracting model files...");
+                await ExtractTarBz2(Path.Combine(modelDir, "qwen3asr.tar.bz2"), modelDir, "qwen3");
+            }
+
+            config.ModelConfig.Qwen3Asr.ConvFrontend = Path.Combine(modelDir, "qwen3", "conv_frontend.onnx");
+            config.ModelConfig.Qwen3Asr.Encoder = Path.Combine(modelDir, "qwen3", "encoder.int8.onnx");
+            config.ModelConfig.Qwen3Asr.Decoder = Path.Combine(modelDir, "qwen3", "decoder.int8.onnx");
+            config.ModelConfig.Qwen3Asr.Tokenizer = Path.Combine(modelDir, "qwen3", "tokenizer");
             config.ModelConfig.Qwen3Asr.Hotwords = "";
             config.ModelConfig.Tokens = "";
             config.ModelConfig.Debug = 0;
             var recognizer = new OfflineRecognizer(config);
 
             var vadModelConfig = new VadModelConfig();
-            if (File.Exists("./silero_vad.onnx"))
+            if (!File.Exists(Path.Combine(modelDir, "silero_vad.onnx")) && !File.Exists(Path.Combine(modelDir, "ten-vad.onnx")))
+            {
+                try
+                {
+                    await DownloadModel("https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad_v5.onnx", Path.Combine(modelDir, "silero_vad.onnx"));
+                }
+                catch (Exception ex)
+                {
+                    throw new FileNotFoundException("Failed to download VAD model.", ex);
+                }
+            }
+            if (File.Exists(Path.Combine(modelDir, "silero_vad.onnx")))
             {
                 Console.WriteLine("Use silero-vad");
-                vadModelConfig.SileroVad.Model = "./silero_vad.onnx";
+                vadModelConfig.SileroVad.Model = Path.Combine(modelDir, "silero_vad.onnx");
                 vadModelConfig.SileroVad.Threshold = 0.3F;
                 vadModelConfig.SileroVad.MinSilenceDuration = 0.5F;
                 vadModelConfig.SileroVad.MinSpeechDuration = 0.25F;
                 vadModelConfig.SileroVad.MaxSpeechDuration = 5.0F;
                 vadModelConfig.SileroVad.WindowSize = 512;
             }
-            else if (File.Exists("./ten-vad.onnx"))
+            else if (File.Exists(Path.Combine(modelDir, "ten-vad.onnx")))
             {
                 Console.WriteLine("Use ten-vad");
-                vadModelConfig.TenVad.Model = "./ten-vad.onnx";
+                vadModelConfig.TenVad.Model = Path.Combine(modelDir, "ten-vad.onnx");
                 vadModelConfig.TenVad.Threshold = 0.3F;
                 vadModelConfig.TenVad.MinSilenceDuration = 0.5F;
                 vadModelConfig.TenVad.MinSpeechDuration = 0.25F;
@@ -46,15 +93,13 @@ namespace WhisperProject.Core
             }
             else
             {
-                Console.WriteLine("Please download ./silero_vad.onnx or ./ten-vad.onnx");
-                return;
+                throw new FileNotFoundException("No VAD model found in the specified model directory.");
             }
             vadModelConfig.Debug = 0;
 
             var vad = new VoiceActivityDetector(vadModelConfig, 60);
 
-            var testWaveFilename = "./lei-jun-test.wav";
-            var reader = new WaveReader(testWaveFilename);
+            var reader = new WaveReader(audioFilePath);
 
             int numSamples = reader.Samples.Length;
             int windowSize = vadModelConfig.SileroVad.WindowSize;
@@ -66,7 +111,9 @@ namespace WhisperProject.Core
 
             int sampleRate = vadModelConfig.SampleRate;
             int numIter = numSamples / windowSize;
-
+            var srtPath = Path.ChangeExtension(audioFilePath, ".srt");
+            int segmentIndex = 1;
+            using var writer = new StreamWriter(srtPath);
             for (int i = 0; i != numIter; ++i)
             {
                 int start = i * windowSize;
@@ -88,8 +135,14 @@ namespace WhisperProject.Core
 
                         if (!string.IsNullOrEmpty(text))
                         {
-                            Console.WriteLine("{0}--{1}: {2}", string.Format("{0:0.00}", startTime),
-                                string.Format("{0:0.00}", startTime + duration), text);
+                            Console.WriteLine($"{WhisperClient.FormatSrtTime(TimeSpan.FromSeconds(startTime))}-->{WhisperClient.FormatSrtTime(TimeSpan.FromSeconds(startTime + duration))}: {text}");
+                            await writer.WriteLineAsync(segmentIndex.ToString());
+                            await writer.WriteLineAsync($"{WhisperClient.FormatSrtTime(TimeSpan.FromSeconds(startTime))}-->{WhisperClient.FormatSrtTime(TimeSpan.FromSeconds(startTime + duration))}");
+                            await writer.WriteLineAsync(text.Trim());
+                            await writer.WriteLineAsync();
+                            segmentIndex++;
+                            //Console.WriteLine("{0}--{1}: {2}", string.Format("{0:0.00}", startTime),
+                            //string.Format("{0:0.00}", startTime + duration), text);
                         }
 
                         vad.Pop();
@@ -108,35 +161,158 @@ namespace WhisperProject.Core
                 var stream = recognizer.CreateStream();
                 stream.AcceptWaveform(sampleRate, segment.Samples);
                 recognizer.Decode(stream);
+                
                 var text = stream.Result.Text;
 
                 if (!string.IsNullOrEmpty(text))
                 {
-                    Console.WriteLine("{0}--{1}: {2}", string.Format("{0:0.00}", startTime),
-                        string.Format("{0:0.00}", startTime + duration), text);
+                    Console.WriteLine($"{WhisperClient.FormatSrtTime(TimeSpan.FromSeconds(startTime))}-->{WhisperClient.FormatSrtTime(TimeSpan.FromSeconds(startTime + duration))}: {text}");
+                    await writer.WriteLineAsync(segmentIndex.ToString());
+                    await writer.WriteLineAsync($"{WhisperClient.FormatSrtTime(TimeSpan.FromSeconds(startTime))}-->{WhisperClient.FormatSrtTime(TimeSpan.FromSeconds(startTime + duration))}");
+                    await writer.WriteLineAsync(text.Trim());
+                    await writer.WriteLineAsync();
+                    segmentIndex++;
                 }
 
                 vad.Pop();
             }
+            await writer.DisposeAsync();
+            return await DetectSpokenLanguage(audioFilePath, modelDir);
         }
-        private async Task<bool> DownloadModel(string modelUrl, string destinationPath)
+        /// <summary>
+        /// runs the spoken language detection model on a test wave file using the specified model directory.
+        /// </summary>
+        /// <param name="audioFilePath">The path to the audio file.</param>
+        /// <param name="modelDir">The path to the model directory.</param>
+        /// <returns>The detected spoken language.</returns>
+        /// <exception cref="ArgumentException"></exception>
+        private static async Task<string> DetectSpokenLanguage(string audioFilePath, string modelDir)
         {
+            // https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-tiny.tar.bz2
+            var modelUrl = "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-tiny.tar.bz2";
+            var config = new SpokenLanguageIdentificationConfig();
+            if (string.IsNullOrEmpty(modelDir))
+            {
+                throw new ArgumentException("Model directory path is null or empty.", nameof(modelDir));
+            }
+            config.Whisper.Encoder = Path.Combine(modelUrl, "sherpa-onnx-whisper-tiny", "tiny-encoder.int8.onnx");
+            config.Whisper.Decoder = Path.Combine(modelUrl, "sherpa-onnx-whisper-tiny", "tiny-decoder.int8.onnx");
+            if (!File.Exists(config.Whisper.Encoder) || !File.Exists(config.Whisper.Decoder))
+            {
+                if (File.Exists(Path.Combine(modelDir, "sherpa-onnx-whisper-tiny.tar.bz2")))
+                {
+                    Console.WriteLine("Model archive already exists. Skipping download.");
+                }
+                else
+                {
+                    Console.WriteLine("Downloading model files...");
+                    await DownloadModel(modelUrl, Path.Combine(modelDir, "sherpa-onnx-whisper-tiny.tar.bz2"));
+                }
+
+                await ExtractTarBz2(Path.Combine(modelDir, "sherpa-onnx-whisper-tiny.tar.bz2"), modelDir, "sherpa-onnx-whisper-tiny");
+
+                //using Stream stream = File.OpenRead($"{modelDir}/sherpa-onnx-whisper-tiny.tar.bz2");
+                //await using var archiveReader = await ReaderFactory.OpenAsyncReader(stream, cancellationToken: default);
+                //while (await archiveReader.MoveToNextEntryAsync(cancellationToken: default))
+                //{
+                //    if (!archiveReader.Entry.IsDirectory)
+                //    {
+                //        using var outputStream = File.Create($"{modelDir}/sherpa-onnx-whisper-tiny/{archiveReader.Entry.Key}");
+                //        await archiveReader.WriteEntryToAsync(outputStream, cancellationToken: default);
+                //    }
+                //}
+            }
+
+
+            var slid = new SpokenLanguageIdentification(config);
+            
+
+            var waveReader = new WaveReader(audioFilePath);
+
+            var s = slid.CreateStream();
+            s.AcceptWaveform(waveReader.SampleRate, waveReader.Samples);
+            var result = slid.Compute(s);
+            Console.WriteLine($"Filename: {audioFilePath}");
+            Console.WriteLine($"Detected language: {result.Lang}");
+            return result.Lang;
+        }
+        private static async Task DownloadModel(string modelUrl, string destinationPath)
+        {
+            Console.WriteLine("Downloading model from: " + modelUrl);
             try
             {
                 using var client = new HttpClient();
-                await client.GetAsync(modelUrl).ContinueWith(responseTask =>
-                {
-                    var response = responseTask.Result;
-                    response.EnsureSuccessStatusCode();
-                    using var fileStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None);
-                    response.Content.CopyToAsync(fileStream).Wait();
-                });
-                return true;
+                client.Timeout = TimeSpan.FromMinutes(8); 
+                using var downloadStream = await client.GetStreamAsync(modelUrl);
+                using var fileWriter = File.Create(destinationPath);
+                await downloadStream.CopyToAsync(fileWriter);
+                Console.WriteLine($"Model downloaded successfully to {destinationPath}");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error downloading model: {ex.Message}");
-                return false;
+                throw;
+            }
+        }
+        private static async Task ExtractTarBz2(string tarBz2FilePath, string outputDirectory, string subFolderName)
+        {
+            Console.WriteLine("Extracting model files from: " + tarBz2FilePath);
+            try
+            {
+                using var fileStream = File.OpenRead(tarBz2FilePath);
+                await using var archiveReader = await ReaderFactory.OpenAsyncReader(fileStream, cancellationToken: default);
+
+                // Resolve absolute path for base directory and append separator to prevent prefix aliasing
+                string targetBaseDir = Path.GetFullPath(Path.Combine(outputDirectory, subFolderName ?? string.Empty));
+                if (!targetBaseDir.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
+                {
+                    targetBaseDir += Path.DirectorySeparatorChar;
+                }
+
+                while (await archiveReader.MoveToNextEntryAsync(cancellationToken: default))
+                {
+                    if (!archiveReader.Entry.IsDirectory)
+                    {
+                        string rawKey = archiveReader.Entry.Key?.Replace('\\', '/') ?? string.Empty;
+                        int firstSlashIndex = rawKey.IndexOf('/');
+                        string relativePath = firstSlashIndex >= 0 ? rawKey.Substring(firstSlashIndex + 1) : rawKey;
+
+                        // Reject empty paths, rooted paths, or directory traversal segments ('.' or '..')
+                        if (string.IsNullOrWhiteSpace(relativePath) ||
+                            Path.IsPathRooted(relativePath) ||
+                            relativePath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                                         .Any(segment => segment == "." || segment == ".."))
+                        {
+                            throw new InvalidOperationException($"Archive entry '{archiveReader.Entry.Key}' contains invalid or unsafe path.");
+                        }
+
+                        string fullOutputPath = Path.GetFullPath(Path.Combine(targetBaseDir, relativePath));
+
+                        // Verify the output path remains within the intended target directory
+                        if (!fullOutputPath.StartsWith(targetBaseDir, StringComparison.Ordinal))
+                        {
+                            throw new InvalidOperationException($"Archive entry '{archiveReader.Entry.Key}' would escape target directory.");
+                        }
+
+                        // Ensure target directory exists before file creation
+                        string? destinationDirectory = Path.GetDirectoryName(fullOutputPath);
+                        if (!string.IsNullOrEmpty(destinationDirectory))
+                        {
+                            Directory.CreateDirectory(destinationDirectory);
+                        }
+
+                        using var outputStream = File.Create(fullOutputPath);
+                        await archiveReader.WriteEntryToAsync(outputStream, cancellationToken: default);
+                    }
+                }
+
+                Console.WriteLine($"Extracted {tarBz2FilePath} to {targetBaseDir}");
+                return;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error extracting {tarBz2FilePath}: {ex.Message}");
+                throw;
             }
         }
     }

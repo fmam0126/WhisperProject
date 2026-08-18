@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "WhisperProject.Core": {
+      "commandName": "Project",
+      "workingDirectory": "."
+    }
+  }
+}
