@@ -2,16 +2,22 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Whisper.net;
-using Whisper.net.Ggml;
 using Whisper.net.Logger;
 using System.Globalization;
 using Whisper.net.Wave;
+using WhisperProject.Core;
+using WhisperProject.Models;
 
 
 namespace WhisperProject.Class;
 
 public static class WhisperClient
 {
+    private const string WhisperModelUrl =
+        "https://huggingface.co/sandrohanea/whisper.net/resolve/v4/classic/ggml-large-v2.bin";
+    private const string WhisperVadModelUrl =
+        "https://huggingface.co/sandrohanea/whisper.net/resolve/v4/vad/ggml-silero-v6.2.0.bin";
+
     public static string FormatSrtTime(TimeSpan time)
     {
         if (time < TimeSpan.Zero) time = TimeSpan.Zero;
@@ -26,10 +32,10 @@ public static class WhisperClient
     /// </summary>
     /// <param name="inputFileName">The path to the input audio file</param>
     /// <param name="modelPath">The path to the Whisper model file</param>
+    /// <param name="progress">Optional progress reporter for the model download.</param>
     /// <returns>The language identified by Whisper, or null if no segments were produced.</returns>
-    public static async Task<string?> TranscribeAsync(string inputFileName, string? modelPath = null, string? language = null)
+    public static async Task<string?> TranscribeAsync(string inputFileName, string? modelPath = null, string? language = null, IProgress<DownloadProgress>? progress = null)
     {
-        var ggmlType = GgmlType.LargeV2;
         var modelFileName = string.IsNullOrWhiteSpace(modelPath) ? "ggml-largev2.bin" : modelPath;
         var wavFileName = inputFileName;
 
@@ -37,7 +43,8 @@ public static class WhisperClient
 
         if (!File.Exists(modelFileName))
         {
-            await DownloadModel(modelFileName, ggmlType);
+            Console.WriteLine($"Downloading Model {modelFileName}");
+            await ModelDownloader.DownloadAsync(WhisperModelUrl, modelFileName, progress);
         }
 
         using var whisperFactory = WhisperFactory.FromPath(modelFileName);
@@ -104,13 +111,12 @@ public static class WhisperClient
     /// <param name="inputFileName">The path to the input audio file</param>
     /// <param name="modelPath">The path to the Whisper model file</param>
     /// <param name="language">The language of the audio file</param>
+    /// <param name="progress">Optional progress reporter for the model downloads.</param>
     /// <returns>The language identified by Whisper, or null if no speech was detected.</returns>
-    public static async Task<string?> TranscribeVadAsync(string inputFileName, string? modelPath = null, string? language = null)
+    public static async Task<string?> TranscribeVadAsync(string inputFileName, string? modelPath = null, string? language = null, IProgress<DownloadProgress>? progress = null)
     {
-        var ggmlType = GgmlType.LargeV2;
         var modelFileName = string.IsNullOrWhiteSpace(modelPath) ? "ggml-largev2.bin" : modelPath;
         var vadModelFileName = "./ggml-silero-v6.2.0.bin";
-        var sileroVadType = SileroVadType.V6_2_0;
         var wavFileName = inputFileName;
         const int sampleRate = 16000;
 
@@ -118,11 +124,13 @@ public static class WhisperClient
 
         if (!File.Exists(modelFileName))
         {
-            await DownloadModel(modelFileName, ggmlType);
+            Console.WriteLine($"Downloading Model {modelFileName}");
+            await ModelDownloader.DownloadAsync(WhisperModelUrl, modelFileName, progress);
         }
         if (!File.Exists(vadModelFileName))
         {
-            await DownloadVadModel(vadModelFileName, sileroVadType);
+            Console.WriteLine($"Downloading VAD Model {vadModelFileName}");
+            await ModelDownloader.DownloadAsync(WhisperVadModelUrl, vadModelFileName, progress);
         }
 
         using var fileStream = File.OpenRead(wavFileName);
@@ -331,38 +339,4 @@ public static class WhisperClient
         public static readonly IComparer<VadTimeMapping> ProcessedTimeComparer =
             Comparer<VadTimeMapping>.Create((a, b) => a.ProcessedTimeTicks.CompareTo(b.ProcessedTimeTicks));
     }
-    /// <summary>
-    /// Downloads the specified Whisper model file if it does not already exist on disk.
-    /// </summary>
-    /// <param name="fileName">The path to the model file</param>
-    /// <param name="ggmlType">The type of the GGML model</param>
-    /// <returns>A task representing the asynchronous operation</returns>
-    /// <exception cref="ArgumentException"></exception>
-    private static async Task DownloadModel(string fileName, GgmlType ggmlType)
-    {
-        if (string.IsNullOrWhiteSpace(fileName))
-            throw new ArgumentException("Model file name must not be empty.", nameof(fileName));
-        Console.WriteLine($"Downloading Model {fileName}");
-        using var modelStream = await WhisperGgmlDownloader.Default.GetGgmlModelAsync(ggmlType);
-        using var fileWriter = File.OpenWrite(fileName);
-        await modelStream.CopyToAsync(fileWriter);
-    }
-    /// <summary>
-    /// Downloads the specified Silero VAD model file if it does not already exist on disk.
-    /// </summary>
-    /// <param name="fileName">The path to the VAD model file</param>
-    /// <param name="vadType">The type of the Silero VAD model</param>
-    /// <returns>A task representing the asynchronous operation</returns>
-    /// <exception cref="ArgumentException"></exception>
-    private static async Task DownloadVadModel(string fileName, SileroVadType vadType)
-    {
-        if (string.IsNullOrWhiteSpace(fileName))
-            throw new ArgumentException("VAD model file name must not be empty.", nameof(fileName));
-        Console.WriteLine($"Downloading VAD Model {fileName}");
-        using var modelStream = await WhisperGgmlDownloader.Default.GetGgmlSileroVadModelAsync(vadType);
-        using var fileWriter = File.OpenWrite(fileName);
-        await modelStream.CopyToAsync(fileWriter);
-    }
-
-
 }

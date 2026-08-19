@@ -1,4 +1,5 @@
 using WhisperProject.Avalonia.ViewModels;
+using WhisperProject.Models;
 
 namespace WhisperProject.Tests.Avalonia;
 
@@ -186,5 +187,79 @@ public class MainWindowViewModelTests
         Assert.Contains("Cancelling...", vm.LogOutput);
         Assert.Matches(@"\[\d{2}:\d{2}:\d{2}\] Cancelling\.\.\.",
             vm.LogOutput.TrimEnd());
+    }
+
+    // ── Download progress ─────────────────────────────────────────────────
+
+    [Fact]
+    public void ProgressPropertiesDefaultValues()
+    {
+        var vm = CreateVm();
+
+        Assert.Equal(0, vm.ProgressValue);
+        Assert.False(vm.IsProgressIndeterminate);
+        Assert.False(vm.IsProgressVisible);
+        Assert.Equal(string.Empty, vm.ProgressStatus);
+    }
+
+    [Fact]
+    public void UpdateProgressSetsValueAndStatus()
+    {
+        var vm = CreateVm();
+
+        vm.UpdateProgress(new DownloadProgress(0.5, 3.5));
+
+        Assert.True(vm.IsProgressVisible);
+        Assert.False(vm.IsProgressIndeterminate);
+        Assert.Equal(50, vm.ProgressValue);
+        Assert.Contains("50.00%", vm.ProgressStatus);
+        Assert.Contains("3.50", vm.ProgressStatus);
+    }
+
+    [Fact]
+    public void UpdateProgressNegativeFractionShowsIndeterminate()
+    {
+        var vm = CreateVm();
+
+        vm.UpdateProgress(new DownloadProgress(-1, 2.0));
+
+        Assert.True(vm.IsProgressVisible);
+        Assert.True(vm.IsProgressIndeterminate);
+        Assert.Equal(0, vm.ProgressValue);
+        Assert.Contains("unknown", vm.ProgressStatus);
+    }
+
+    [Fact]
+    public void UpdateProgressFinalFractionHidesBar()
+    {
+        var vm = CreateVm();
+
+        vm.UpdateProgress(new DownloadProgress(1, 4.2));
+
+        Assert.False(vm.IsProgressVisible);
+        Assert.Equal(string.Empty, vm.ProgressStatus);
+    }
+
+    [Fact]
+    public void UpdateProgressPhaseRestartShowsBarAgain()
+    {
+        var vm = CreateVm();
+
+        vm.UpdateProgress(new DownloadProgress(1, 4.2));   // first download done — bar hidden
+        vm.UpdateProgress(new DownloadProgress(0, 0));     // next download starts — bar re-shown
+
+        Assert.True(vm.IsProgressVisible);
+        Assert.Equal(0, vm.ProgressValue);
+    }
+
+    [Fact]
+    public void SetProgressPhaseChangesStatusPrefix()
+    {
+        var vm = CreateVm();
+        vm.SetProgressPhase("Preparing Whisper model");
+
+        vm.UpdateProgress(new DownloadProgress(0.25, 6.0));
+
+        Assert.StartsWith("Preparing Whisper model:", vm.ProgressStatus);
     }
 }

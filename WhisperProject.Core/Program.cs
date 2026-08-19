@@ -2,6 +2,7 @@
 using System.Security;
 using System.Security.Cryptography.X509Certificates;
 using WhisperProject.Class;
+using WhisperProject.Core;
 using WhisperProject.Models;
 
 namespace WhisperProject;
@@ -52,11 +53,15 @@ class Program
             SystemPrompt = settings.SystemPrompt
         };
 
-
+        string inputPath = Path.EndsInDirectorySeparator(settings.InputPath) ? settings.InputPath : settings.InputPath + Path.DirectorySeparatorChar;
         List<string> sourceFiles;
-        FileConvert fileConvert = new FileConvert(settings.InputPath);
+        FileConvert fileConvert = new FileConvert(inputPath);
 
-        sourceFiles = FolderParser.FindSourceFiles(settings.InputPath);
+        var qwenProgress = ProgressConsoleReporter.Create("Download/Extract progress");
+        var whisperProgress = ProgressConsoleReporter.Create("Download progress");
+        var dpdfProgress = ProgressConsoleReporter.Create("Download progress");
+
+        sourceFiles = FolderParser.FindSourceFiles(inputPath);
         foreach (var item in sourceFiles)
         {
             string outputPath;
@@ -77,7 +82,7 @@ class Program
                 // filter.ApplyVoiceEmphasis(outputPath, filteredOutputPath);
                 try
                 {
-                    await filter.ApplyDpdfNetVoiceEnhancement(outputPath, filteredOutputPath, settings.DpdfNetModelPath, settings.DpdfNetDownloadUrl);
+                    await filter.ApplyDpdfNetVoiceEnhancement(outputPath, filteredOutputPath, settings.DpdfNetModelPath, settings.DpdfNetDownloadUrl, dpdfProgress);
 
                 }
                 catch (System.Exception ex)
@@ -91,16 +96,35 @@ class Program
 
             // transcribe the file and save the srt in the same directory as the original file
             Console.WriteLine($"sending {Path.GetFileName(item)} to Whisper");
+            //try
+            //{
+
+            //    await Qwen3Asr.RunQwen3Asr(outputPath, Directory.GetCurrentDirectory());
+            //}
+            //catch (System.Exception ex)
+            //{
+            //    Console.WriteLine($"Error transcribing {Path.GetFileName(item)}: {ex.Message}");
+            //    continue;
+            //}
             try
             {
                 string? identifiedLanguage;
-                if (settings.UseVoiceActivityDetection)
+                switch (settings.UseQwen3Asr)
                 {
-                    identifiedLanguage = await WhisperClient.TranscribeVadAsync(outputPath, modelPath: settings.WhisperModelPath, language: settings.WhisperLanguage);
-                }
-                else
-                {
-                    identifiedLanguage = await WhisperClient.TranscribeAsync(outputPath, language: settings.WhisperLanguage, modelPath: settings.WhisperModelPath);
+                    case true:
+                        // change to AppContext.BaseDirectory
+                        identifiedLanguage = await Qwen3Asr.RunQwen3Asr(outputPath, Directory.GetCurrentDirectory(), qwenProgress);
+                        break;
+                    case false:
+                        if (settings.UseVoiceActivityDetection)
+                        {
+                            identifiedLanguage = await WhisperClient.TranscribeVadAsync(outputPath, modelPath: settings.WhisperModelPath, language: settings.WhisperLanguage, progress: whisperProgress);
+                        }
+                        else
+                        {
+                            identifiedLanguage = await WhisperClient.TranscribeAsync(outputPath, language: settings.WhisperLanguage, modelPath: settings.WhisperModelPath, progress: whisperProgress);
+                        }
+                        break;
                 }
                 subtitleTranslator.SourceLanguage = identifiedLanguage ?? string.Empty;
                 Console.WriteLine(Path.GetDirectoryName(outputPath));

@@ -3,6 +3,8 @@ using NAudio.Dsp;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 using SherpaOnnx;
+using WhisperProject.Core;
+using WhisperProject.Models;
 
 namespace WhisperProject.Class;
 
@@ -71,7 +73,8 @@ public class VoiceEmphasisFilter
     /// <param name="outputFilePath">output file path</param>
     /// <param name="modelPath">path to the voice enhancement onnx model</param>
     /// <param name="modelDownloadUrl">URL to download the DPDFNet model</param>
-    public async Task ApplyDpdfNetVoiceEnhancement(string inputFilePath, string outputFilePath, string modelPath, string modelDownloadUrl)
+    /// <param name="progress">Optional progress reporter for the model download.</param>
+    public async Task ApplyDpdfNetVoiceEnhancement(string inputFilePath, string outputFilePath, string modelPath, string modelDownloadUrl, IProgress<DownloadProgress>? progress = null)
     {
         if (!File.Exists(inputFilePath))
         {
@@ -83,7 +86,7 @@ public class VoiceEmphasisFilter
             Console.WriteLine($"DPDFNet model not found at {modelPath}.");
             try
             {
-                await DownloadDpdfNetModel(modelPath, modelDownloadUrl);
+                await DownloadDpdfNetModel(modelPath, modelDownloadUrl, progress);
             }
             catch (Exception ex)
             {
@@ -112,7 +115,7 @@ public class VoiceEmphasisFilter
             Console.WriteLine($"failed to save denoised audio to {outputFilePath}");
         }
     }
-    private static async Task DownloadDpdfNetModel(string modelPath, string modelDownloadUrl)
+    private static async Task DownloadDpdfNetModel(string modelPath, string modelDownloadUrl, IProgress<DownloadProgress>? progress = null)
     {
         if (File.Exists(modelPath))
         {
@@ -121,11 +124,7 @@ public class VoiceEmphasisFilter
         }
 
         Console.WriteLine($"Downloading DPDFNet model to {modelPath} ...");
-        using var httpClient = new HttpClient();
-        var modelUrl = modelDownloadUrl;
-        var response = await httpClient.GetAsync(modelUrl);
-        response.EnsureSuccessStatusCode();
-        await File.WriteAllBytesAsync(modelPath, await response.Content.ReadAsByteArrayAsync());
+        await ModelDownloader.DownloadAsync(modelDownloadUrl, modelPath, progress);
         Console.WriteLine("DPDFNet model downloaded successfully.");
     }
 }

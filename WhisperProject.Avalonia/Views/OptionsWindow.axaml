@@ -15,8 +15,9 @@
         <Thickness x:Key="SectionMargin">0,12,0,0</Thickness>
         <Thickness x:Key="FieldMargin">0,4,0,0</Thickness>
     </Window.Resources>
-
-    <ScrollViewer>
+    <Grid RowDefinitions="*, Auto" Margin="0">
+        
+    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="20" Spacing="4">
 
             <!-- LLM / API Settings -->
@@ -66,6 +67,26 @@
             <TextBox Text="{Binding WhisperLanguage}"
                      PlaceholderText="e.g. 'en', 'no' (leave empty for auto-detect)"
                      Margin="{StaticResource FieldMargin}"/>
+
+            <!-- Qwen3 ASR -->
+            <TextBlock Text="Qwen3 ASR"
+                       FontWeight="Bold" FontSize="16"
+                       Margin="{StaticResource SectionMargin}"/>
+            <Border Height="1" Background="{DynamicResource SystemAccentColor}"
+                    Margin="0,0,0,6"/>
+            <TextBlock Text="Qwen3 performs its own internal VAD and is used for transcription instead of Whisper. Model files are downloaded to the working directory on first use."
+                       TextWrapping="Wrap" Foreground="{DynamicResource SystemAltMediumColor}"/>
+
+            <RadioButton GroupName="Qwen3Asr"
+                         IsChecked="{Binding Qwen3AsrEnabled}"
+                         Margin="{StaticResource FieldMargin}">
+                Enabled — use Qwen3 ASR for transcription
+            </RadioButton>
+            <RadioButton GroupName="Qwen3Asr"
+                         IsChecked="{Binding Qwen3AsrDisabled}"
+                         Margin="{StaticResource FieldMargin}">
+                Disabled — use Whisper for transcription
+            </RadioButton>
 
             <!-- Translation Mode -->
             <TextBlock Text="Translation Mode"
@@ -167,15 +188,16 @@
                      TextWrapping="Wrap"
                      Margin="{StaticResource FieldMargin}"/>
 
-            <!-- Actions -->
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
-                        Spacing="12" Margin="0,16,0,8">
-                <Button Content="OK" Width="80"
-                        x:Name="OkButton" IsDefault="True"/>
-                <Button Content="Cancel" Width="80"
-                        x:Name="CancelButton" IsCancel="True"/>
-            </StackPanel>
 
         </StackPanel>
     </ScrollViewer>
+            <!-- Actions -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right"
+                        Spacing="12" Margin="0,16,8,8">
+                <Button Content="Save" Width="80"
+                        x:Name="SaveButton" IsDefault="True"/>
+                <Button Content="Cancel" Width="80"
+                        x:Name="CancelButton" IsCancel="True"/>
+            </StackPanel>
+    </Grid>
 </Window>

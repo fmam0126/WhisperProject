@@ -6,6 +6,8 @@
 *.onnx
 ggml*.bin
 appsettings.json
+sherpa-onnx-whisper-tiny/
+qwen3/
 # dotenv files
 .env
 # User-specific files
@@ -482,3 +484,5 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+/WhisperProject.Core/sherpa-onnx-whisper-tiny.tar.bz2
+/WhisperProject.Core/qwen3asr.tar.bz2
