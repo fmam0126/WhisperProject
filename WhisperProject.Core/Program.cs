@@ -108,7 +108,8 @@ class Program
                 switch (settings.UseQwen3Asr)
                 {
                     case true:
-                        identifiedLanguage = await Qwen3Asr.RunQwen3Asr(outputPath, AppContext.BaseDirectory);
+                        // change to AppContext.BaseDirectory
+                        identifiedLanguage = await Qwen3Asr.RunQwen3Asr(outputPath, Directory.GetCurrentDirectory());
                         break;
                     case false:
                         if (settings.UseVoiceActivityDetection)
