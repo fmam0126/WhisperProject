@@ -30,7 +30,7 @@ public sealed class ThrottledProgress<T> : IProgress<T>
     private readonly TimeSpan _minInterval;
     private readonly Func<T, bool> _isFinal;
     private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
-    private long _lastForwardedTicks;
+    private TimeSpan _lastForwarded;
     private bool _hasForwarded;
 
     public ThrottledProgress(IProgress<T> inner, TimeSpan minInterval, Func<T, bool> isFinal)
@@ -42,10 +42,10 @@ public sealed class ThrottledProgress<T> : IProgress<T>
 
     public void Report(T value)
     {
-        if (_isFinal(value) || !_hasForwarded || _stopwatch.ElapsedTicks - _lastForwardedTicks >= _minInterval.Ticks)
+        if (_isFinal(value) || !_hasForwarded || _stopwatch.Elapsed - _lastForwarded >= _minInterval)
         {
             _hasForwarded = true;
-            _lastForwardedTicks = _stopwatch.ElapsedTicks;
+            _lastForwarded = _stopwatch.Elapsed;
             _inner.Report(value);
         }
     }

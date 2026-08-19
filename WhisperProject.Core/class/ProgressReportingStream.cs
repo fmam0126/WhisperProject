@@ -15,7 +15,7 @@ internal sealed class ProgressReportingStream : Stream
     private readonly TimeSpan _minReportInterval;
     private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
     private long _bytesRead;
-    private long _lastReportTicks;
+    private TimeSpan _lastReport;
     private double _lastSpeed;
 
     internal ProgressReportingStream(Stream inner, IProgress<DownloadProgress>? progress, TimeSpan? minReportInterval = null)
@@ -72,15 +72,16 @@ internal sealed class ProgressReportingStream : Stream
             return;
 
         _bytesRead += bytesRead;
-        var elapsedSeconds = _stopwatch.Elapsed.TotalSeconds;
+        var elapsed = _stopwatch.Elapsed;
+        var elapsedSeconds = elapsed.TotalSeconds;
         _lastSpeed = elapsedSeconds > 0
             ? _bytesRead / 1024d / 1024d / elapsedSeconds
             : 0;
 
-        if (_stopwatch.ElapsedTicks - _lastReportTicks < _minReportInterval.Ticks)
+        if (elapsed - _lastReport < _minReportInterval)
             return;
 
-        _lastReportTicks = _stopwatch.ElapsedTicks;
+        _lastReport = elapsed;
         var fraction = _totalLength > 0
             ? (double)_bytesRead / _totalLength
             : -1;

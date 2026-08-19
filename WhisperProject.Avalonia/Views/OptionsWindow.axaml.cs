@@ -33,7 +33,7 @@ public partial class OptionsWindow : Window
     {
         base.OnLoaded(e);
 
-        OkButton.Click += (_, _) =>
+        SaveButton.Click += (_, _) =>
         {
             WasConfirmed = true;
             Close();

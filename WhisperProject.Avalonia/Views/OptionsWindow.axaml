@@ -195,7 +195,7 @@
             <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right"
                         Spacing="12" Margin="0,16,8,8">
                 <Button Content="Save" Width="80"
-                        x:Name="OkButton" IsDefault="True"/>
+                        x:Name="SaveButton" IsDefault="True"/>
                 <Button Content="Cancel" Width="80"
                         x:Name="CancelButton" IsCancel="True"/>
             </StackPanel>
