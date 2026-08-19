@@ -57,6 +57,10 @@ class Program
         List<string> sourceFiles;
         FileConvert fileConvert = new FileConvert(inputPath);
 
+        var qwenProgress = ProgressConsoleReporter.Create("Download/Extract progress");
+        var whisperProgress = ProgressConsoleReporter.Create("Download progress");
+        var dpdfProgress = ProgressConsoleReporter.Create("Download progress");
+
         sourceFiles = FolderParser.FindSourceFiles(inputPath);
         foreach (var item in sourceFiles)
         {
@@ -78,7 +82,7 @@ class Program
                 // filter.ApplyVoiceEmphasis(outputPath, filteredOutputPath);
                 try
                 {
-                    await filter.ApplyDpdfNetVoiceEnhancement(outputPath, filteredOutputPath, settings.DpdfNetModelPath, settings.DpdfNetDownloadUrl);
+                    await filter.ApplyDpdfNetVoiceEnhancement(outputPath, filteredOutputPath, settings.DpdfNetModelPath, settings.DpdfNetDownloadUrl, dpdfProgress);
 
                 }
                 catch (System.Exception ex)
@@ -109,16 +113,16 @@ class Program
                 {
                     case true:
                         // change to AppContext.BaseDirectory
-                        identifiedLanguage = await Qwen3Asr.RunQwen3Asr(outputPath, Directory.GetCurrentDirectory());
+                        identifiedLanguage = await Qwen3Asr.RunQwen3Asr(outputPath, Directory.GetCurrentDirectory(), qwenProgress);
                         break;
                     case false:
                         if (settings.UseVoiceActivityDetection)
                         {
-                            identifiedLanguage = await WhisperClient.TranscribeVadAsync(outputPath, modelPath: settings.WhisperModelPath, language: settings.WhisperLanguage);
+                            identifiedLanguage = await WhisperClient.TranscribeVadAsync(outputPath, modelPath: settings.WhisperModelPath, language: settings.WhisperLanguage, progress: whisperProgress);
                         }
                         else
                         {
-                            identifiedLanguage = await WhisperClient.TranscribeAsync(outputPath, language: settings.WhisperLanguage, modelPath: settings.WhisperModelPath);
+                            identifiedLanguage = await WhisperClient.TranscribeAsync(outputPath, language: settings.WhisperLanguage, modelPath: settings.WhisperModelPath, progress: whisperProgress);
                         }
                         break;
                 }

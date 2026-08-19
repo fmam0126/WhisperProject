@@ -4,9 +4,9 @@ using SharpCompress.Writers;
 using SherpaOnnx;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Text;
 using WhisperProject.Class;
+using WhisperProject.Models;
 
 namespace WhisperProject.Core
 {
@@ -16,8 +16,6 @@ namespace WhisperProject.Core
         /// Folder name the sherpa-onnx-whisper-tiny archive extracts into, relative to the model directory.
         /// </summary>
         private const string WhisperTinyModelDirName = "sherpa-onnx-whisper-tiny";
-
-        private sealed record DownloadProgress(double Fraction, double MegabytesPerSecond);
 
         /// <summary>
         /// Builds the local path to a file inside the extracted sherpa-onnx-whisper-tiny
@@ -31,8 +29,9 @@ namespace WhisperProject.Core
         /// </summary>
         /// <param name="audioFilePath">The path to the audio file.</param>
         /// <param name="modelDir">The directory containing the model files.</param>
+        /// <param name="progress">Optional progress reporter for model downloads and extraction.</param>
         /// <returns>the detected spoken language</returns>
-        public static async Task<string> RunQwen3Asr(string audioFilePath, string modelDir)
+        public static async Task<string> RunQwen3Asr(string audioFilePath, string modelDir, IProgress<DownloadProgress>? progress = null)
         {
             // https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2
             // please download model files from
@@ -58,24 +57,13 @@ namespace WhisperProject.Core
                 else
                 {
                     Console.WriteLine("Downloading model files...");
-                    var progress = new Progress<DownloadProgress>(status =>
-                    {
-                        var percentage = status.Fraction >= 0
-                            ? $"{status.Fraction:P2}"
-                            : "unknown";
-                        var message = $"Download progress: {percentage} | {status.MegabytesPerSecond:F2} MB/s";
-                        Console.Write($"\r{message.PadRight(40)}");
-
-                        if (status.Fraction >= 1)
-                        {
-                            Console.WriteLine();
-                        }
-                    });
-                    await DownloadModel("https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2", Path.Combine(modelDir, "qwen3asr.tar.bz2"), progress);
+                    await ModelDownloader.DownloadAsync(
+                        "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2",
+                        Path.Combine(modelDir, "qwen3asr.tar.bz2"),
+                        progress);
                 }
-                
-                //Console.WriteLine("Extracting model files...");
-                await ExtractTarBz2(Path.Combine(modelDir, "qwen3asr.tar.bz2"), modelDir, "qwen3");
+
+                await ExtractTarBz2(Path.Combine(modelDir, "qwen3asr.tar.bz2"), modelDir, "qwen3", progress);
             }
 
             config.ModelConfig.Qwen3Asr.ConvFrontend = Path.Combine(modelDir, "qwen3", "conv_frontend.onnx");
@@ -92,20 +80,10 @@ namespace WhisperProject.Core
             {
                 try
                 {
-                    var progress = new Progress<DownloadProgress>(status =>
-                    {
-                        var percentage = status.Fraction >= 0
-                            ? $"{status.Fraction:P2}"
-                            : "unknown";
-                        var message = $"Download progress: {percentage} | {status.MegabytesPerSecond:F2} MB/s";
-                        Console.Write($"\r{message.PadRight(40)}");
-
-                        if (status.Fraction >= 1)
-                        {
-                            Console.WriteLine();
-                        }
-                    });
-                    await DownloadModel("https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad_v5.onnx", Path.Combine(modelDir, "silero_vad.onnx"), progress);
+                    await ModelDownloader.DownloadAsync(
+                        "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad_v5.onnx",
+                        Path.Combine(modelDir, "silero_vad.onnx"),
+                        progress);
                 }
                 catch (Exception ex)
                 {
@@ -216,16 +194,17 @@ namespace WhisperProject.Core
                 vad.Pop();
             }
             await writer.DisposeAsync();
-            return await DetectSpokenLanguage(audioFilePath, modelDir);
+            return await DetectSpokenLanguage(audioFilePath, modelDir, progress);
         }
         /// <summary>
         /// runs the spoken language detection model on a test wave file using the specified model directory.
         /// </summary>
         /// <param name="audioFilePath">The path to the audio file.</param>
         /// <param name="modelDir">The path to the model directory.</param>
+        /// <param name="progress">Optional progress reporter for model downloads and extraction.</param>
         /// <returns>The detected spoken language.</returns>
         /// <exception cref="ArgumentException"></exception>
-        private static async Task<string> DetectSpokenLanguage(string audioFilePath, string modelDir)
+        private static async Task<string> DetectSpokenLanguage(string audioFilePath, string modelDir, IProgress<DownloadProgress>? progress = null)
         {
             // https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-tiny.tar.bz2
             var modelUrl = "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-tiny.tar.bz2";
@@ -245,23 +224,13 @@ namespace WhisperProject.Core
                 else
                 {
                     Console.WriteLine("Downloading model files...");
-                    var progress = new Progress<DownloadProgress>(status =>
-                    {
-                        var percentage = status.Fraction >= 0
-                            ? $"{status.Fraction:P2}"
-                            : "unknown";
-                        var message = $"Download progress: {percentage} | {status.MegabytesPerSecond:F2} MB/s";
-                        Console.Write($"\r{message.PadRight(40)}");
-
-                        if (status.Fraction >= 1)
-                        {
-                            Console.WriteLine();
-                        }
-                    });
-                    await DownloadModel(modelUrl, Path.Combine(modelDir, "sherpa-onnx-whisper-tiny.tar.bz2"), progress);
+                    await ModelDownloader.DownloadAsync(
+                        modelUrl,
+                        Path.Combine(modelDir, "sherpa-onnx-whisper-tiny.tar.bz2"),
+                        progress);
                 }
 
-                await ExtractTarBz2(Path.Combine(modelDir, "sherpa-onnx-whisper-tiny.tar.bz2"), modelDir, WhisperTinyModelDirName);
+                await ExtractTarBz2(Path.Combine(modelDir, "sherpa-onnx-whisper-tiny.tar.bz2"), modelDir, WhisperTinyModelDirName, progress);
             }
 
 
@@ -277,85 +246,24 @@ namespace WhisperProject.Core
             Console.WriteLine($"Detected language: {result.Lang}");
             return result.Lang;
         }
-        private static async Task DownloadModel(
-            string modelUrl,
-            string destinationPath,
+        private static Task ExtractTarBz2(
+            string tarBz2FilePath,
+            string outputDirectory,
+            string subFolderName,
             IProgress<DownloadProgress>? progress = null)
-        {
-            Console.WriteLine("Downloading model from: " + modelUrl);
-
-            try
-            {
-                using var client = new HttpClient
-                {
-                    Timeout = TimeSpan.FromMinutes(8)
-                };
-
-                using var response = await client.GetAsync(
-                    modelUrl,
-                    HttpCompletionOption.ResponseHeadersRead);
-
-                response.EnsureSuccessStatusCode();
-
-                var totalBytes = response.Content.Headers.ContentLength;
-                var downloadedBytes = 0L;
-                var buffer = new byte[81920];
-            var stopwatch = Stopwatch.StartNew();
-
-            progress?.Report(new DownloadProgress(0, 0));
-
-                await using var downloadStream = await response.Content.ReadAsStreamAsync();
-                await using var fileWriter = new FileStream(
-                    destinationPath,
-                    FileMode.Create,
-                    FileAccess.Write,
-                    FileShare.None,
-                    bufferSize: buffer.Length,
-                    useAsync: true);
-
-                int bytesRead;
-                while ((bytesRead = await downloadStream.ReadAsync(buffer)) > 0)
-                {
-                    await fileWriter.WriteAsync(buffer.AsMemory(0, bytesRead));
-
-                    downloadedBytes += bytesRead;
-
-                    var elapsedSeconds = stopwatch.Elapsed.TotalSeconds;
-                    var megabytesPerSecond = elapsedSeconds > 0
-                        ? downloadedBytes / 1024d / 1024d / elapsedSeconds
-                        : 0;
-
-                    var fraction = totalBytes.HasValue && totalBytes.Value > 0
-                        ? (double)downloadedBytes / totalBytes.Value
-                        : -1;
-
-                    progress?.Report(new DownloadProgress(
-                        fraction,
-                        megabytesPerSecond));
-                }
-
-                var finalElapsedSeconds = stopwatch.Elapsed.TotalSeconds;
-                var finalSpeed = finalElapsedSeconds > 0
-                    ? downloadedBytes / 1024d / 1024d / finalElapsedSeconds
-                    : 0;
-                progress?.Report(new DownloadProgress(1, finalSpeed));
-
-                Console.WriteLine(
-                    $"Model downloaded successfully to {destinationPath}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error downloading model: {ex.Message}");
-                throw;
-            }
-        }
-        private static async Task ExtractTarBz2(string tarBz2FilePath, string outputDirectory, string subFolderName)
         {
             Console.WriteLine("Extracting model files from: " + tarBz2FilePath);
             try
             {
                 using var fileStream = File.OpenRead(tarBz2FilePath);
-                await using var archiveReader = await ReaderFactory.OpenAsyncReader(fileStream, cancellationToken: default);
+                // SharpCompress's BZip2 reader pulls the underlying stream one byte
+                // at a time. The synchronous reader is ~2x faster than the async
+                // one (which awaits a ReadAsync(..., 0, 1) per byte), and the
+                // BufferedStream turns the per-byte reads into in-memory hits.
+                // Callers run on background threads, so blocking is acceptable.
+                using var bufferedStream = new BufferedStream(fileStream, bufferSize: 1 << 20);
+                using var progressStream = new ProgressReportingStream(bufferedStream, progress);
+                using var archiveReader = ReaderFactory.OpenReader(progressStream);
 
                 // Resolve absolute path for base directory and append separator to prevent prefix aliasing
                 string targetBaseDir = Path.GetFullPath(Path.Combine(outputDirectory, subFolderName ?? string.Empty));
@@ -364,7 +272,7 @@ namespace WhisperProject.Core
                     targetBaseDir += Path.DirectorySeparatorChar;
                 }
 
-                while (await archiveReader.MoveToNextEntryAsync(cancellationToken: default))
+                while (archiveReader.MoveToNextEntry())
                 {
                     if (!archiveReader.Entry.IsDirectory)
                     {
@@ -396,19 +304,21 @@ namespace WhisperProject.Core
                             Directory.CreateDirectory(destinationDirectory);
                         }
 
-                        using var outputStream = File.Create(fullOutputPath);
-                        await archiveReader.WriteEntryToAsync(outputStream, cancellationToken: default);
+                        using var outputStream = new FileStream(fullOutputPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 1 << 20);
+                        archiveReader.WriteEntryTo(outputStream);
                     }
                 }
 
+                progress?.Report(new DownloadProgress(1, progressStream.CurrentSpeed));
                 Console.WriteLine($"Extracted {tarBz2FilePath} to {targetBaseDir}");
-                return;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error extracting {tarBz2FilePath}: {ex.Message}");
                 throw;
             }
+
+            return Task.CompletedTask;
         }
     }
 }

@@ -2,6 +2,8 @@ using System;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using WhisperProject.Avalonia.Services;
+using WhisperProject.Core;
+using WhisperProject.Models;
 
 namespace WhisperProject.Avalonia.ViewModels;
 
@@ -115,6 +117,80 @@ public class MainWindowViewModel : ViewModelBase
         set => SetProperty(ref _logOutput, value);
     }
 
+    //  Download progress
+
+    private double _progressValue;
+
+    /// <summary>
+    /// Progress-bar value in the range 0–100. 0 while indeterminate.
+    /// </summary>
+    public double ProgressValue
+    {
+        get => _progressValue;
+        set => SetProperty(ref _progressValue, value);
+    }
+
+    private bool _isProgressIndeterminate;
+
+    /// <summary>
+    /// True when the total download size is unknown (fraction &lt; 0) — the
+    /// progress bar animates in an indeterminate state.
+    /// </summary>
+    public bool IsProgressIndeterminate
+    {
+        get => _isProgressIndeterminate;
+        set => SetProperty(ref _isProgressIndeterminate, value);
+    }
+
+    private string _progressStatus = string.Empty;
+
+    /// <summary>
+    /// Status text shown next to the progress bar (phase + percentage + speed).
+    /// </summary>
+    public string ProgressStatus
+    {
+        get => _progressStatus;
+        set => SetProperty(ref _progressStatus, value);
+    }
+
+    private bool _isProgressVisible;
+
+    /// <summary>
+    /// Controls whether the progress bar row is visible.
+    /// </summary>
+    public bool IsProgressVisible
+    {
+        get => _isProgressVisible;
+        set => SetProperty(ref _isProgressVisible, value);
+    }
+
+    private string _currentPhase = "Downloading model";
+
+    /// <summary>
+    /// Applies a download/extraction progress report. Must be called on the UI thread.
+    /// A fraction &gt;= 1 hides the bar (operation finished).
+    /// </summary>
+    internal void UpdateProgress(DownloadProgress progress)
+    {
+        IsProgressVisible = true;
+        IsProgressIndeterminate = progress.Fraction < 0;
+        ProgressValue = progress.Fraction >= 0
+            ? Math.Clamp(progress.Fraction * 100, 0, 100)
+            : 0;
+        ProgressStatus = $"{_currentPhase}: {DownloadProgressFormat.Format(progress)}";
+
+        if (progress.Fraction >= 1)
+        {
+            IsProgressVisible = false;
+            ProgressStatus = string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Sets the phase label shown in <see cref="ProgressStatus"/>.
+    /// </summary>
+    internal void SetProgressPhase(string phase) => _currentPhase = phase;
+
     //  Commands — set by the view code-behind to access TopLevel 
     //
     //  StorageProvider (the file/folder picker) requires a TopLevel / Visual
@@ -200,6 +276,16 @@ public class MainWindowViewModel : ViewModelBase
             });
         };
 
+        _currentService.DownloadProgressChanged += progress =>
+        {
+            global::Avalonia.Threading.Dispatcher.UIThread.Post(() => UpdateProgress(progress));
+        };
+
+        _currentService.StatusChanged += phase =>
+        {
+            global::Avalonia.Threading.Dispatcher.UIThread.Post(() => SetProgressPhase(phase));
+        };
+
         try
         {
             await Task.Run(() => _currentService.ProcessAsync());
@@ -210,7 +296,12 @@ public class MainWindowViewModel : ViewModelBase
         }
         finally
         {
-            global::Avalonia.Threading.Dispatcher.UIThread.Post(() => IsProcessing = false);
+            global::Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                IsProcessing = false;
+                IsProgressVisible = false;
+                ProgressStatus = string.Empty;
+            });
         }
     }
 

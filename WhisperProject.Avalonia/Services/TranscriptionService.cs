@@ -42,6 +42,21 @@ public class TranscriptionService
     public event Action<string, string>? FileFailed;
 
     /// <summary>
+    /// Raised (on a background thread) with throttled download/extraction progress.
+    /// Subscribers must marshal to the UI thread.
+    /// </summary>
+    public event Action<DownloadProgress>? DownloadProgressChanged;
+
+    /// <summary>
+    /// Raised when the current phase changes (which model is being downloaded).
+    /// </summary>
+    public event Action<string>? StatusChanged;
+
+    private string _currentPhase = "Downloading model";
+
+    private static readonly TimeSpan ProgressReportInterval = TimeSpan.FromMilliseconds(250);
+
+    /// <summary>
     /// Creates a new transcription service for the given input.
     /// </summary>
     /// <param name="settings">All transcription/translation configuration.</param>
@@ -173,6 +188,7 @@ public class TranscriptionService
         CancellationToken cancellationToken)
     {
         var fileConvert = new FileConvert(_settings.InputPath);
+        var downloadProgress = CreateDownloadProgress();
 
         // Step 1: Convert media file to 16kHz mono WAV
         ReportProgress($"  Converting to WAV: {Path.GetFileName(sourceFile)}");
@@ -183,6 +199,7 @@ public class TranscriptionService
         if (_settings.ApplyDpdfNet)
         {
             ReportProgress("  Applying DpdfNet voice enhancement...");
+            SetPhase("Preparing DpdfNet model");
             var filter = new VoiceEmphasisFilter();
             var filteredOutputPath = Path.Combine(
                 Path.GetDirectoryName(outputPath) ?? string.Empty,
@@ -190,7 +207,8 @@ public class TranscriptionService
 
             await filter.ApplyDpdfNetVoiceEnhancement(
                 outputPath, filteredOutputPath,
-                _settings.DpdfNetModelPath, _settings.DpdfNetDownloadUrl);
+                _settings.DpdfNetModelPath, _settings.DpdfNetDownloadUrl,
+                downloadProgress);
 
             File.Copy(filteredOutputPath, outputPath, overwrite: true);
             File.Delete(filteredOutputPath);
@@ -203,26 +221,32 @@ public class TranscriptionService
         string modelDir = AppContext.BaseDirectory;
         if (_settings.UseQwen3Asr)
         {
-            identifiedLanguage = await Qwen3Asr.RunQwen3Asr(outputPath, modelDir);
+            SetPhase("Preparing Qwen3 ASR models");
+            identifiedLanguage = await Qwen3Asr.RunQwen3Asr(outputPath, modelDir, downloadProgress);
         }
         else if (_settings.UseVoiceActivityDetection)
         {
+            SetPhase("Preparing Whisper and VAD models");
             identifiedLanguage = await WhisperClient.TranscribeVadAsync(
                 outputPath,
                 modelPath: _settings.WhisperModelPath,
-                language: _settings.WhisperLanguage);
+                language: _settings.WhisperLanguage,
+                progress: downloadProgress);
         }
         else
         {
+            SetPhase("Preparing Whisper model");
             identifiedLanguage = await WhisperClient.TranscribeAsync(
                 outputPath,
                 language: _settings.WhisperLanguage,
-                modelPath: _settings.WhisperModelPath);
+                modelPath: _settings.WhisperModelPath,
+                progress: downloadProgress);
         }
         subtitleTranslator.SourceLanguage = identifiedLanguage ?? string.Empty;
         cancellationToken.ThrowIfCancellationRequested();
 
         // Step 4: Translate the generated SRT via the LLM
+        SetPhase("Translating subtitles");
         ReportProgress("  Translating subtitles...");
         var srtFileName = Path.Combine(
             Path.GetDirectoryName(outputPath) ?? string.Empty,
@@ -268,5 +292,25 @@ public class TranscriptionService
     private void ReportProgress(string message)
     {
         ProgressChanged?.Invoke(message);
+    }
+
+    /// <summary>
+    /// Creates a throttled progress reporter that raises
+    /// <see cref="DownloadProgressChanged"/>. Reports run synchronously on the
+    /// reporting (background) thread; the final report is always forwarded.
+    /// </summary>
+    private IProgress<DownloadProgress> CreateDownloadProgress() =>
+        new ThrottledProgress<DownloadProgress>(
+            new RelayProgress<DownloadProgress>(p => DownloadProgressChanged?.Invoke(p)),
+            ProgressReportInterval,
+            p => p.Fraction >= 1);
+
+    /// <summary>
+    /// Raises <see cref="StatusChanged"/> with the given phase description.
+    /// </summary>
+    private void SetPhase(string phase)
+    {
+        _currentPhase = phase;
+        StatusChanged?.Invoke(phase);
     }
 }
