@@ -67,6 +67,26 @@
                      PlaceholderText="e.g. 'en', 'no' (leave empty for auto-detect)"
                      Margin="{StaticResource FieldMargin}"/>
 
+            <!-- Qwen3 ASR -->
+            <TextBlock Text="Qwen3 ASR"
+                       FontWeight="Bold" FontSize="16"
+                       Margin="{StaticResource SectionMargin}"/>
+            <Border Height="1" Background="{DynamicResource SystemAccentColor}"
+                    Margin="0,0,0,6"/>
+            <TextBlock Text="Qwen3 performs its own internal VAD and is used for transcription instead of Whisper. Model files are downloaded to the working directory on first use."
+                       TextWrapping="Wrap" Foreground="{DynamicResource SystemAltMediumColor}"/>
+
+            <RadioButton GroupName="Qwen3Asr"
+                         IsChecked="{Binding Qwen3AsrEnabled}"
+                         Margin="{StaticResource FieldMargin}">
+                Enabled — use Qwen3 ASR for transcription
+            </RadioButton>
+            <RadioButton GroupName="Qwen3Asr"
+                         IsChecked="{Binding Qwen3AsrDisabled}"
+                         Margin="{StaticResource FieldMargin}">
+                Disabled — use Whisper for transcription
+            </RadioButton>
+
             <!-- Translation Mode -->
             <TextBlock Text="Translation Mode"
                        FontWeight="Bold" FontSize="16"

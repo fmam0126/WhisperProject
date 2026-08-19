@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using WhisperProject.Class;
+using WhisperProject.Core;
 using WhisperProject.Models;
 
 namespace WhisperProject.Avalonia.Services;
@@ -196,10 +197,15 @@ public class TranscriptionService
             cancellationToken.ThrowIfCancellationRequested();
         }
 
-        // Step 3: Transcribe WAV to SRT via Whisper
+        // Step 3: Transcribe WAV to SRT (Qwen3 ASR runs its own internal VAD)
         ReportProgress("  Transcribing audio to text...");
         string? identifiedLanguage;
-        if (_settings.UseVoiceActivityDetection)
+        string modelDir = AppContext.BaseDirectory;
+        if (_settings.UseQwen3Asr)
+        {
+            identifiedLanguage = await Qwen3Asr.RunQwen3Asr(outputPath, modelDir);
+        }
+        else if (_settings.UseVoiceActivityDetection)
         {
             identifiedLanguage = await WhisperClient.TranscribeVadAsync(
                 outputPath,

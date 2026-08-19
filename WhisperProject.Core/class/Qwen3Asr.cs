@@ -9,8 +9,20 @@ using WhisperProject.Class;
 
 namespace WhisperProject.Core
 {
-    internal class Qwen3Asr
+    public class Qwen3Asr
     {
+        /// <summary>
+        /// Folder name the sherpa-onnx-whisper-tiny archive extracts into, relative to the model directory.
+        /// </summary>
+        private const string WhisperTinyModelDirName = "sherpa-onnx-whisper-tiny";
+
+        /// <summary>
+        /// Builds the local path to a file inside the extracted sherpa-onnx-whisper-tiny
+        /// model folder, relative to the given model directory.
+        /// </summary>
+        internal static string GetWhisperTinyModelPath(string modelDir, string fileName) =>
+            Path.Combine(modelDir, WhisperTinyModelDirName, fileName);
+
         /// <summary>
         /// Runs the Qwen3 ASR model on the specified audio file using the given model directory.
         /// </summary>
@@ -141,8 +153,6 @@ namespace WhisperProject.Core
                             await writer.WriteLineAsync(text.Trim());
                             await writer.WriteLineAsync();
                             segmentIndex++;
-                            //Console.WriteLine("{0}--{1}: {2}", string.Format("{0:0.00}", startTime),
-                            //string.Format("{0:0.00}", startTime + duration), text);
                         }
 
                         vad.Pop();
@@ -195,8 +205,8 @@ namespace WhisperProject.Core
             {
                 throw new ArgumentException("Model directory path is null or empty.", nameof(modelDir));
             }
-            config.Whisper.Encoder = Path.Combine(modelUrl, "sherpa-onnx-whisper-tiny", "tiny-encoder.int8.onnx");
-            config.Whisper.Decoder = Path.Combine(modelUrl, "sherpa-onnx-whisper-tiny", "tiny-decoder.int8.onnx");
+            config.Whisper.Encoder = GetWhisperTinyModelPath(modelDir, "tiny-encoder.int8.onnx");
+            config.Whisper.Decoder = GetWhisperTinyModelPath(modelDir, "tiny-decoder.int8.onnx");
             if (!File.Exists(config.Whisper.Encoder) || !File.Exists(config.Whisper.Decoder))
             {
                 if (File.Exists(Path.Combine(modelDir, "sherpa-onnx-whisper-tiny.tar.bz2")))
@@ -209,18 +219,7 @@ namespace WhisperProject.Core
                     await DownloadModel(modelUrl, Path.Combine(modelDir, "sherpa-onnx-whisper-tiny.tar.bz2"));
                 }
 
-                await ExtractTarBz2(Path.Combine(modelDir, "sherpa-onnx-whisper-tiny.tar.bz2"), modelDir, "sherpa-onnx-whisper-tiny");
-
-                //using Stream stream = File.OpenRead($"{modelDir}/sherpa-onnx-whisper-tiny.tar.bz2");
-                //await using var archiveReader = await ReaderFactory.OpenAsyncReader(stream, cancellationToken: default);
-                //while (await archiveReader.MoveToNextEntryAsync(cancellationToken: default))
-                //{
-                //    if (!archiveReader.Entry.IsDirectory)
-                //    {
-                //        using var outputStream = File.Create($"{modelDir}/sherpa-onnx-whisper-tiny/{archiveReader.Entry.Key}");
-                //        await archiveReader.WriteEntryToAsync(outputStream, cancellationToken: default);
-                //    }
-                //}
+                await ExtractTarBz2(Path.Combine(modelDir, "sherpa-onnx-whisper-tiny.tar.bz2"), modelDir, WhisperTinyModelDirName);
             }
 
 

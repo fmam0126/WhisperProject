@@ -83,8 +83,36 @@ public class OptionsViewModel : ViewModelBase
         set => SetProperty(ref _targetLanguage, value);
     }
 
-    // Whisper settings 
 
+    private bool _qwen3AsrEnabled;
+    /// <summary>
+    /// When true, the Qwen-3 ASR model is used for transcription instead of Whisper.
+    /// </summary>
+    public bool Qwen3AsrEnabled
+    {
+        get => _qwen3AsrEnabled;
+        set
+        {
+            if (SetProperty(ref _qwen3AsrEnabled, value) && value)
+                Qwen3AsrDisabled = false;
+        }
+    }
+
+    private bool _qwen3AsrDisabled = true;
+    /// <summary>
+    /// When true, the Qwen-3 ASR model is disabled and Whisper is used for transcription.
+    /// </summary>
+    public bool Qwen3AsrDisabled
+    {
+        get => _qwen3AsrDisabled;
+        set
+        {
+            if (SetProperty(ref _qwen3AsrDisabled, value) && value)
+                Qwen3AsrEnabled = false;
+        }
+    }
+
+    // Whisper settings 
     private string _whisperModelPath = string.Empty;
 
     /// <summary>
@@ -165,7 +193,7 @@ public class OptionsViewModel : ViewModelBase
     //  Group 2 - Voice Activity Detection
     //  Group 3 - DpdfNet voice enhancement
 
-    //Translation mode
+    //  Translation mode
 
     private bool _useContextTranslation = true;
 
@@ -346,6 +374,8 @@ public class OptionsViewModel : ViewModelBase
         VadDisabled = !settings.UseVoiceActivityDetection;
         DpdfNetEnabled = settings.ApplyDpdfNet;
         DpdfNetDisabled = !settings.ApplyDpdfNet;
+        Qwen3AsrEnabled = settings.UseQwen3Asr;
+        Qwen3AsrDisabled = !settings.UseQwen3Asr;
     }
 
     /// <summary>
@@ -376,6 +406,7 @@ public class OptionsViewModel : ViewModelBase
             SystemPrompt = SystemPrompt,
             UseContextTranslation = UseContextTranslation,
             UseVoiceActivityDetection = VadEnabled,
+            UseQwen3Asr = Qwen3AsrEnabled,
             ApplyDpdfNet = DpdfNetEnabled,
             DpdfNetModelPath = DpdfNetModelPath,
             DpdfNetDownloadUrl = DpdfNetDownloadUrl

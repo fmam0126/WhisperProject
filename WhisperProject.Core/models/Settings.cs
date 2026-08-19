@@ -20,4 +20,5 @@ public sealed class Settings
     public string DpdfNetModelPath { get; set; } = string.Empty;
     public string DpdfNetDownloadUrl { get; set; } = "https://github.com/k2-fsa/sherpa-onnx/releases/download/speech-enhancement-models/dpdfnet8.onnx";
     public bool UseVoiceActivityDetection { get; set; } = false;
+    public bool UseQwen3Asr { get; set; } = false;
 }

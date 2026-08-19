@@ -105,13 +105,21 @@ class Program
             try
             {
                 string? identifiedLanguage;
-                if (settings.UseVoiceActivityDetection)
+                switch (settings.UseQwen3Asr)
                 {
-                    identifiedLanguage = await WhisperClient.TranscribeVadAsync(outputPath, modelPath: settings.WhisperModelPath, language: settings.WhisperLanguage);
-                }
-                else
-                {
-                    identifiedLanguage = await WhisperClient.TranscribeAsync(outputPath, language: settings.WhisperLanguage, modelPath: settings.WhisperModelPath);
+                    case true:
+                        identifiedLanguage = await Qwen3Asr.RunQwen3Asr(outputPath, AppContext.BaseDirectory);
+                        break;
+                    case false:
+                        if (settings.UseVoiceActivityDetection)
+                        {
+                            identifiedLanguage = await WhisperClient.TranscribeVadAsync(outputPath, modelPath: settings.WhisperModelPath, language: settings.WhisperLanguage);
+                        }
+                        else
+                        {
+                            identifiedLanguage = await WhisperClient.TranscribeAsync(outputPath, language: settings.WhisperLanguage, modelPath: settings.WhisperModelPath);
+                        }
+                        break;
                 }
                 subtitleTranslator.SourceLanguage = identifiedLanguage ?? string.Empty;
                 Console.WriteLine(Path.GetDirectoryName(outputPath));
