@@ -37,6 +37,7 @@ public class SettingsPersistenceTests
         original.UsePerLineTranslation = true;     // → UseContextTranslation = false
         original.VadDisabled = true;               // → UseVoiceActivityDetection = false
         original.DpdfNetEnabled = true;            // → ApplyDpdfNet = true
+        original.TranslationDisabled = true;       // → UseTranslation = false
 
         MainWindow.SaveSettingsToFile(original, dir.Path);
         var loaded = MainWindow.LoadSettingsOrDefaults(dir.Path);
@@ -62,6 +63,8 @@ public class SettingsPersistenceTests
         Assert.True(loaded.VadDisabled);
         Assert.True(loaded.DpdfNetEnabled);
         Assert.False(loaded.DpdfNetDisabled);
+        Assert.False(loaded.TranslationEnabled);
+        Assert.True(loaded.TranslationDisabled);
     }
 
     [Fact]
@@ -86,6 +89,8 @@ public class SettingsPersistenceTests
         Assert.False(loaded.VadDisabled);
         Assert.False(loaded.DpdfNetEnabled);
         Assert.True(loaded.DpdfNetDisabled);
+        Assert.True(loaded.TranslationEnabled);
+        Assert.False(loaded.TranslationDisabled);
     }
 
     [Fact]

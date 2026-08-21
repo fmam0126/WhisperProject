@@ -124,6 +124,27 @@ public class OptionsViewModelTests
         Assert.False(vm.Qwen3AsrEnabled);
     }
 
+    // Translation group
+    [Fact]
+    public void TranslationEnabledTrueUnsetsTranslationDisabled()
+    {
+        var vm = new OptionsViewModel();
+        Assert.True(vm.TranslationEnabled);
+        vm.TranslationEnabled = true;
+        Assert.True(vm.TranslationEnabled);
+        Assert.False(vm.TranslationDisabled);
+    }
+
+    [Fact]
+    public void TranslationDisabledTrueUnsetsTranslationEnabled()
+    {
+        var vm = new OptionsViewModel();
+        Assert.True(vm.TranslationEnabled);
+        vm.TranslationDisabled = true;
+        Assert.True(vm.TranslationDisabled);
+        Assert.False(vm.TranslationEnabled);
+    }
+
     // ── ToSettings parse fallbacks ────────────────────────────────────────
 
     [Theory]
@@ -191,6 +212,7 @@ public class OptionsViewModelTests
             DpdfNetModelPath = "dpdf.onnx",
             DpdfNetDownloadUrl = "https://example.com/dpdf.onnx",
             Qwen3AsrEnabled = true,
+            TranslationDisabled = true,
         };
 
         var settings = vm.ToSettings(@"C:\input");
@@ -210,6 +232,7 @@ public class OptionsViewModelTests
         Assert.Equal("dpdf.onnx", settings.DpdfNetModelPath);
         Assert.Equal("https://example.com/dpdf.onnx", settings.DpdfNetDownloadUrl);
         Assert.True(settings.UseQwen3Asr);
+        Assert.False(settings.UseTranslation);
     }
 
     [Fact]
@@ -220,6 +243,7 @@ public class OptionsViewModelTests
         vm.VadDisabled = true;            // → UseVoiceActivityDetection=false
         vm.DpdfNetEnabled = true;         // → ApplyDpdfNet=true
         vm.Qwen3AsrEnabled = true;        // → UseQwen3Asr=true
+        vm.TranslationDisabled = true;    // → UseTranslation=false
 
         var settings = vm.ToSettings(@"C:\test");
 
@@ -227,6 +251,7 @@ public class OptionsViewModelTests
         Assert.False(settings.UseVoiceActivityDetection);
         Assert.True(settings.ApplyDpdfNet);
         Assert.True(settings.UseQwen3Asr);
+        Assert.False(settings.UseTranslation);
     }
 
     [Fact]
@@ -237,6 +262,7 @@ public class OptionsViewModelTests
         settings.UseVoiceActivityDetection = false;
         settings.ApplyDpdfNet = true;
         settings.UseQwen3Asr = true;
+        settings.UseTranslation = false;
 
         var vm = new OptionsViewModel();
         vm.LoadFromSettings(settings);
@@ -264,6 +290,8 @@ public class OptionsViewModelTests
         Assert.False(vm.DpdfNetDisabled);
         Assert.True(vm.Qwen3AsrEnabled);
         Assert.False(vm.Qwen3AsrDisabled);
+        Assert.False(vm.TranslationEnabled);
+        Assert.True(vm.TranslationDisabled);
     }
 
     [Fact]
@@ -274,6 +302,7 @@ public class OptionsViewModelTests
         original.UseVoiceActivityDetection = true;
         original.ApplyDpdfNet = false;
         original.UseQwen3Asr = true;
+        original.UseTranslation = false;
         original.Concurrency = 6;
         original.ContextSize = 15;
 
@@ -298,6 +327,7 @@ public class OptionsViewModelTests
         Assert.Equal(original.UseVoiceActivityDetection, roundTripped.UseVoiceActivityDetection);
         Assert.Equal(original.ApplyDpdfNet, roundTripped.ApplyDpdfNet);
         Assert.Equal(original.UseQwen3Asr, roundTripped.UseQwen3Asr);
+        Assert.Equal(original.UseTranslation, roundTripped.UseTranslation);
         Assert.Equal(original.DpdfNetModelPath, roundTripped.DpdfNetModelPath);
         Assert.Equal(original.DpdfNetDownloadUrl, roundTripped.DpdfNetDownloadUrl);
     }

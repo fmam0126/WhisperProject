@@ -88,6 +88,26 @@
                 Disabled — use Whisper for transcription
             </RadioButton>
 
+            <!-- Translation -->
+            <TextBlock Text="Translation"
+                       FontWeight="Bold" FontSize="16"
+                       Margin="{StaticResource SectionMargin}"/>
+            <Border Height="1" Background="{DynamicResource SystemAccentColor}"
+                    Margin="0,0,0,6"/>
+            <TextBlock Text="When disabled, subtitles are saved untranslated with the detected language suffix (e.g. video.EN.srt) and no LLM is contacted."
+                       TextWrapping="Wrap" Foreground="{DynamicResource SystemAltMediumColor}"/>
+
+            <RadioButton GroupName="Translation"
+                         IsChecked="{Binding TranslationEnabled}"
+                         Margin="{StaticResource FieldMargin}">
+                Enabled — translate subtitles with the LLM
+            </RadioButton>
+            <RadioButton GroupName="Translation"
+                         IsChecked="{Binding TranslationDisabled}"
+                         Margin="{StaticResource FieldMargin}">
+                Disabled — keep untranslated subtitles
+            </RadioButton>
+
             <!-- Translation Mode -->
             <TextBlock Text="Translation Mode"
                        FontWeight="Bold" FontSize="16"

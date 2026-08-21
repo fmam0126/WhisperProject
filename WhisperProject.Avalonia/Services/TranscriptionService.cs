@@ -245,24 +245,42 @@ public class TranscriptionService
         subtitleTranslator.SourceLanguage = identifiedLanguage ?? string.Empty;
         cancellationToken.ThrowIfCancellationRequested();
 
-        // Step 4: Translate the generated SRT via the LLM
-        SetPhase("Translating subtitles");
-        ReportProgress("  Translating subtitles...");
+        // Step 4: Translate the generated SRT via the LLM, or keep the untranslated
+        // transcription next to the source file with the detected-language suffix.
         var srtFileName = Path.Combine(
             Path.GetDirectoryName(outputPath) ?? string.Empty,
             $"{Path.GetFileNameWithoutExtension(outputPath)}.srt");
+        var sourceDirectory = Path.GetDirectoryName(sourceFile) ?? outputPath;
 
-        if (_settings.UseContextTranslation)
+        if (_settings.UseTranslation)
         {
-            await subtitleTranslator.TranslateSrtWithContextAsync(
-                srtFileName,
-                Path.GetDirectoryName(sourceFile) ?? outputPath);
+            SetPhase("Translating subtitles");
+            ReportProgress("  Translating subtitles...");
+            if (_settings.UseContextTranslation)
+            {
+                await subtitleTranslator.TranslateSrtWithContextAsync(
+                    srtFileName, sourceDirectory);
+            }
+            else
+            {
+                await subtitleTranslator.TranslateSrtAsync(
+                    srtFileName, sourceDirectory);
+            }
         }
         else
         {
-            await subtitleTranslator.TranslateSrtAsync(
-                srtFileName,
-                Path.GetDirectoryName(sourceFile) ?? outputPath);
+            SetPhase("Saving subtitles");
+            ReportProgress("  Saving untranslated subtitles...");
+            if (File.Exists(srtFileName))
+            {
+                string langSuffix = string.IsNullOrWhiteSpace(identifiedLanguage)
+                    ? string.Empty
+                    : $".{identifiedLanguage.ToUpperInvariant()}";
+                var outputSrtPath = Path.Combine(sourceDirectory,
+                    $"{Path.GetFileNameWithoutExtension(sourceFile)}{langSuffix}.srt");
+                File.Copy(srtFileName, outputSrtPath, overwrite: true);
+                ReportProgress($"  Saved: {Path.GetFileName(outputSrtPath)}");
+            }
         }
         cancellationToken.ThrowIfCancellationRequested();
 

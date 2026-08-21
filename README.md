@@ -1,6 +1,6 @@
 # Whisper AutoSubtitle
 
-A tool to generate translated subtitles for videos using OpenAI Whisper. It processes video and audio files from a configured input folder (or a single file in the GUI), converts them to audio, transcribes the audio using Whisper, translates the transcription to a desired language, and saves the subtitles in SRT format next to the original video file.
+A tool to generate subtitles for videos using OpenAI Whisper or Qwen3 ASR. It processes video and audio files from a configured input folder (or a single file in the GUI), converts them to audio, transcribes the audio, optionally translates the transcription to a desired language via an LLM, and saves the subtitles in SRT format next to the original video file.
 
 Available as both a **cross-platform desktop GUI** (Avalonia) and a **console/CLI application**.
 
@@ -20,14 +20,16 @@ The solution (`WhisperProject.sln`) contains three projects targeting **.NET 10*
 - **Batch folder processing** — scan a folder (and subdirectories) for all supported media files.
 - **Single-file mode** — process one video or audio file at a time (GUI only).
 - Converts video/audio files (`.mp4`, `.mkv`, `.mp3`) to 16 kHz mono WAV audio using FFmpeg.
-- Transcribes audio using a local Whisper model ([Whisper.net](https://github.com/sandrohanea/whisper.net) 1.9.1).
+- Transcribes audio using a local Whisper model ([Whisper.net](https://github.com/sandrohanea/whisper.net) 1.9.1) or [Qwen3 ASR](https://github.com/k2-fsa/sherpa-onnx) (sherpa-onnx), which runs its own internal VAD.
+- **Spoken-language detection** — the detected language is used to name the output subtitles (e.g., `video.EN.srt`).
 - **Voice Activity Detection (VAD)** using Silero VAD — detects speech segments, removes silence, and remaps timestamps back to the original timeline for accurate subtitles.
 - **Voice enhancement** using DpdfNet (sherpa.onnx) — AI-based speech denoising to isolate speech frequencies before transcription.
+- **Optional translation** — an enable/disable toggle controls whether subtitles are translated. When disabled, the untranslated transcription is saved next to the source file (e.g., `video.EN.srt`) without contacting an LLM.
 - Translates the transcription to any target language via an OpenAI-compatible LLM API (Ollama, LM Studio, llama.cpp, etc.).
 - **Context-aware batch translation** — sends multiple subtitle entries to the LLM at once with surrounding context for better translation quality.
 - **Per-line translation mode** — translates each subtitle line independently.
 - Saves subtitles in SRT format next to the original video file (e.g., `video.EN.srt`).
-- **Auto-download** of Whisper model, VAD model, and DpdfNet model when missing.
+- **Auto-download** of Whisper, Qwen3 ASR, VAD (`silero_vad_v5.onnx` / `ten-vad.onnx`), whisper-tiny (language detection), and DpdfNet models when missing, with **unified progress reporting** shown in the GUI progress bar and CLI output.
 - **Retry policies** with [Polly](https://github.com/App-vNext/Polly) for robust LLM API communication.
 - **Reasoning-model support** — automatically strips `<think>` tags from LLM responses (for models like DeepSeek-R1, QwQ, etc.).
 
@@ -83,12 +85,14 @@ Create an `appsettings.json` file in `WhisperProject.Core/` with the following s
     "GptPath": "/v1/chat/completions",
     "GptModel": "model-name",
     "Concurrency": 4,
+    "UseTranslation": true,
     "UseContextTranslation": true,
     "ContextSize": 10,
     "SystemPrompt": "You are a helpful assistant for translating video subtitles. You receive text in the format of a subtitle file and you translate it to the target language without adding any comments or explanations, just output the translated text. Always keep the formatting of the original text.",
-    "WhisperModelpath": "./ggml-largev2.bin",
+    "WhisperModelPath": "./ggml-largev2.bin",
     "WhisperLanguage": "auto",
     "UseVoiceActivityDetection": false,
+    "UseQwen3Asr": false,
     "ApplyDpdfNet": false,
     "DpdfNetModelPath": "./dpdfnet8.onnx",
     "DpdfNetDownloadUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/speech-enhancement-models/dpdfnet8.onnx"
@@ -108,11 +112,13 @@ Create an `appsettings.json` file in `WhisperProject.Core/` with the following s
 | `GptPath`                   | string  | `/v1/chat/completions` | API base path. The `/chat/completions` suffix is stripped — the OpenAI SDK appends it automatically.    |
 | `GptModel`                  | string  | _(required)_      | Name of the LLM model to use (e.g., `"gpt-4o"`, `"llama3.1"`, `"gemma2"`).                                   |
 | `Concurrency`               | uint    | `4`               | Maximum number of parallel LLM translation requests.                                                          |
+| `UseTranslation`            | bool    | `true`            | When `true`, subtitles are translated via the LLM. When `false`, translation is skipped and the untranslated SRT is saved next to the source file with the detected-language suffix (e.g., `video.EN.srt`). |
 | `UseContextTranslation`     | bool    | `true`            | When `true`, sends batches of `ContextSize` subtitle entries to the LLM for context-aware translation. When `false`, translates each line independently. |
 | `ContextSize`               | uint    | `10`              | Number of subtitle entries sent to the LLM per batch for context-aware translation.                           |
 | `SystemPrompt`              | string  | _(see example)_   | System prompt instructing the LLM how to perform subtitle translation.                                        |
-| `WhisperModelpath`          | string  | `./ggml-largev2.bin` | File path to the local Whisper GGML model. Auto-downloaded if missing.                                    |
+| `WhisperModelPath`          | string  | `./ggml-largev2.bin` | File path to the local Whisper GGML model. Auto-downloaded if missing.                                    |
 | `WhisperLanguage`           | string  | `"auto"`          | Language code for Whisper transcription (e.g., `"en"`, `"no"`), or `"auto"` for automatic detection.         |
+| `UseQwen3Asr`               | bool    | `false`           | Transcribe with the sherpa-onnx Qwen3 ASR model instead of Whisper. Runs its own internal VAD; models are auto-downloaded to the `qwen3/` folder on first use. |
 | `UseVoiceActivityDetection` | bool    | `false`           | Enable Silero VAD to detect speech segments and filter silence before transcription.                          |
 | `ApplyDpdfNet`              | bool    | `false`           | Enable DpdfNet AI speech denoising to improve speech clarity before transcription.                            |
 | `DpdfNetModelPath`          | string  | `./dpdfnet8.onnx` | File path to the DpdfNet ONNX model. Auto-downloaded from `DpdfNetDownloadUrl` if missing.                    |
@@ -127,7 +133,7 @@ Create an `appsettings.json` file in `WhisperProject.Core/` with the following s
 | [Whisper.net](https://github.com/sandrohanea/whisper.net) 1.9.1                      | Local Whisper transcription                  |
 | [FFMpegCore](https://github.com/rosenbjerg/FFMpegCore) 5.4.0                         | FFmpeg integration for media conversion      |
 | [NAudio](https://github.com/naudio/NAudio) 3.0.0-preview.5                           | Audio processing and filtering               |
-| [sherpa.onnx](https://github.com/k2-fsa/sherpa-onnx) 1.13.2                          | DpdfNet AI speech denoising                  |
+| [sherpa.onnx](https://github.com/k2-fsa/sherpa-onnx) 1.13.2                          | DpdfNet AI speech denoising + Qwen3 ASR transcription |
 | [Microsoft.Agents.AI](https://www.nuget.org/packages/Microsoft.Agents.AI) 1.10.0     | LLM agent abstraction                        |
 | [Polly](https://github.com/App-vNext/Polly) 8.6.6                                    | Resilience and retry policies                |
 | [SubtitlesParserV2](https://www.nuget.org/packages/SubtitlesParserV2) 2.4.0          | SRT subtitle parsing                         |
@@ -188,6 +194,6 @@ Workflows are in [`.github/workflows/`](.github/workflows/).
 1. **File discovery** — `FolderParser` recursively finds `.mp4`, `.mkv`, and `.mp3` files.
 2. **Conversion** — `FileConverter` uses FFmpeg to convert media to 16 kHz mono WAV (`pcm_s16le`).
 3. **Voice enhancement** (optional) — `VoiceEmphasisFilter` applies DpdfNet AI denoising via sherpa.onnx.
-4. **Transcription** — `WhisperClient` runs Whisper (ggml-largev2) to produce an SRT file. Optionally uses Silero VAD to detect speech segments and remap timestamps to the original audio timeline.
-5. **Translation** — `SubtitleTranslator` sends the SRT to an OpenAI-compatible LLM using the Microsoft Agent Framework (`Microsoft.Agents.AI`), with Polly retry/timeout resilience. Supports context-batch and per-line modes.
-6. **Cleanup** — Temporary WAV and SRT files are removed after translation.
+4. **Transcription** — `WhisperClient` runs Whisper (ggml-largev2) to produce an SRT file, or `Qwen3Asr` runs the sherpa-onnx Qwen3 ASR model (with its own internal VAD). Optionally uses Silero VAD to detect speech segments and remap timestamps to the original audio timeline. The spoken language is detected and used to name the output file.
+5. **Translation** (optional) — when `UseTranslation` is enabled, `SubtitleTranslator` sends the SRT to an OpenAI-compatible LLM using the Microsoft Agent Framework (`Microsoft.Agents.AI`), with Polly retry/timeout resilience. Supports context-batch and per-line modes. When disabled, the raw SRT is copied next to the source file with the detected-language suffix (e.g., `video.EN.srt`) and no LLM is contacted.
+6. **Cleanup** — Temporary WAV and SRT files are removed after translation (or after the untranslated copy).

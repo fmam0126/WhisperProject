@@ -19,6 +19,7 @@ public class SettingsTests
         Assert.False(settings.ApplyDpdfNet);
         Assert.False(settings.UseVoiceActivityDetection);
         Assert.False(settings.UseQwen3Asr);
+        Assert.True(settings.UseTranslation);
         Assert.Equal(
             "https://github.com/k2-fsa/sherpa-onnx/releases/download/speech-enhancement-models/dpdfnet8.onnx",
             settings.DpdfNetDownloadUrl);
@@ -36,6 +37,7 @@ public class SettingsTests
         settings.ApplyDpdfNet = true;
         settings.UseVoiceActivityDetection = true;
         settings.UseQwen3Asr = true;
+        settings.UseTranslation = false;
         settings.SystemPrompt = "Custom prompt";
         settings.DpdfNetDownloadUrl = "https://example.com/model.onnx";
 
@@ -45,6 +47,7 @@ public class SettingsTests
         Assert.True(settings.ApplyDpdfNet);
         Assert.True(settings.UseVoiceActivityDetection);
         Assert.True(settings.UseQwen3Asr);
+        Assert.False(settings.UseTranslation);
         Assert.Equal("Custom prompt", settings.SystemPrompt);
         Assert.Equal("https://example.com/model.onnx", settings.DpdfNetDownloadUrl);
     }
