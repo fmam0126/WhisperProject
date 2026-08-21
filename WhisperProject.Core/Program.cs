@@ -106,9 +106,9 @@ class Program
             //    Console.WriteLine($"Error transcribing {Path.GetFileName(item)}: {ex.Message}");
             //    continue;
             //}
+            string? identifiedLanguage = null;
             try
             {
-                string? identifiedLanguage;
                 switch (settings.UseQwen3Asr)
                 {
                     case true:
@@ -137,20 +137,33 @@ class Program
 
             Console.WriteLine($"Finished processing {Path.GetFileName(item)}");
             Console.WriteLine("--------------------------------------------------");
-            Console.WriteLine("Translating subtitles...");
+            Console.WriteLine(settings.UseTranslation ? "Translating subtitles..." : "Saving untranslated subtitles...");
             try
             {
                 string srtFileName = $"{Path.GetDirectoryName(outputPath)}\\{Path.GetFileNameWithoutExtension(outputPath)}.srt";
-                switch (settings.UseContextTranslation)
+                string sourceDirectory = Path.GetDirectoryName(item) ?? outputPath;
+                if (settings.UseTranslation)
                 {
-                    case true:
-                        await subtitleTranslator.TranslateSrtWithContextAsync(srtFileName, Path.GetDirectoryName(item) ?? outputPath);
-                        break;
-                    case false:
-                        await subtitleTranslator.TranslateSrtAsync(srtFileName, Path.GetDirectoryName(item) ?? outputPath);
-                        break;
+                    switch (settings.UseContextTranslation)
+                    {
+                        case true:
+                            await subtitleTranslator.TranslateSrtWithContextAsync(srtFileName, sourceDirectory);
+                            break;
+                        case false:
+                            await subtitleTranslator.TranslateSrtAsync(srtFileName, sourceDirectory);
+                            break;
+                    }
+                    Console.WriteLine($"Finished Translating {Path.GetFileName(item)}");
                 }
-                Console.WriteLine($"Finished Translating {Path.GetFileName(item)}");
+                else if (File.Exists(srtFileName))
+                {
+                    string langSuffix = string.IsNullOrWhiteSpace(identifiedLanguage)
+                        ? string.Empty
+                        : $".{identifiedLanguage.ToUpperInvariant()}";
+                    string outputSrtPath = Path.Combine(sourceDirectory, $"{Path.GetFileNameWithoutExtension(item)}{langSuffix}.srt");
+                    File.Copy(srtFileName, outputSrtPath, overwrite: true);
+                    Console.WriteLine($"Saved untranslated subtitles: {Path.GetFileName(outputSrtPath)}");
+                }
             }
             catch (Exception ex)
             {

@@ -186,12 +186,14 @@ public class OptionsViewModel : ViewModelBase
     // Radio-button groups (mutually exclusive booleans)
     //
     //  RadioButton in Avalonia doesn't natively bind to an enum or
-    //  automatically uncheck siblings. We emulate the behaviour with three
+    //  automatically uncheck siblings. We emulate the behaviour with two
     //  bool properties per group where _exactly one_ is true at all times.
     //
-    //  Group 1 - Translation mode
-    //  Group 2 - Voice Activity Detection
-    //  Group 3 - DpdfNet voice enhancement
+    //  Group 1 - Qwen3 ASR
+    //  Group 2 - Translation mode
+    //  Group 3 - Voice Activity Detection
+    //  Group 4 - DpdfNet voice enhancement
+    //  Group 5 - Translation
 
     //  Translation mode
 
@@ -322,6 +324,41 @@ public class OptionsViewModel : ViewModelBase
         set => SetProperty(ref _dpdfNetDownloadUrl, value);
     }
 
+    // Translation
+
+    private bool _translationEnabled = true;
+
+    /// <summary>
+    /// When true, the generated SRT is translated via the LLM. Mutually
+    /// exclusive with <see cref="TranslationDisabled"/>.
+    /// </summary>
+    public bool TranslationEnabled
+    {
+        get => _translationEnabled;
+        set
+        {
+            if (SetProperty(ref _translationEnabled, value) && value)
+                TranslationDisabled = false;
+        }
+    }
+
+    private bool _translationDisabled;
+
+    /// <summary>
+    /// When true, translation is skipped and the untranslated SRT is saved
+    /// next to the source file with the detected-language suffix (e.g.
+    /// video.EN.srt). Mutually exclusive with <see cref="TranslationEnabled"/>.
+    /// </summary>
+    public bool TranslationDisabled
+    {
+        get => _translationDisabled;
+        set
+        {
+            if (SetProperty(ref _translationDisabled, value) && value)
+                TranslationEnabled = false;
+        }
+    }
+
     // Helpers 
 
     /// <summary>
@@ -376,6 +413,8 @@ public class OptionsViewModel : ViewModelBase
         DpdfNetDisabled = !settings.ApplyDpdfNet;
         Qwen3AsrEnabled = settings.UseQwen3Asr;
         Qwen3AsrDisabled = !settings.UseQwen3Asr;
+        TranslationEnabled = settings.UseTranslation;
+        TranslationDisabled = !settings.UseTranslation;
     }
 
     /// <summary>
@@ -407,6 +446,7 @@ public class OptionsViewModel : ViewModelBase
             UseContextTranslation = UseContextTranslation,
             UseVoiceActivityDetection = VadEnabled,
             UseQwen3Asr = Qwen3AsrEnabled,
+            UseTranslation = TranslationEnabled,
             ApplyDpdfNet = DpdfNetEnabled,
             DpdfNetModelPath = DpdfNetModelPath,
             DpdfNetDownloadUrl = DpdfNetDownloadUrl

@@ -75,7 +75,7 @@
             <Border Height="1" Background="{DynamicResource SystemAccentColor}"
                     Margin="0,0,0,6"/>
             <TextBlock Text="Qwen3 performs its own internal VAD and is used for transcription instead of Whisper. Model files are downloaded to the working directory on first use."
-                       TextWrapping="Wrap" Foreground="{DynamicResource SystemAltMediumColor}"/>
+                       TextWrapping="Wrap" Foreground="{DynamicResource SystemControlPageTextBaseHighBrush}"/>
 
             <RadioButton GroupName="Qwen3Asr"
                          IsChecked="{Binding Qwen3AsrEnabled}"
@@ -88,6 +88,26 @@
                 Disabled — use Whisper for transcription
             </RadioButton>
 
+            <!-- Translation -->
+            <TextBlock Text="Translation"
+                       FontWeight="Bold" FontSize="16"
+                       Margin="{StaticResource SectionMargin}"/>
+            <Border Height="1" Background="{DynamicResource SystemAccentColor}"
+                    Margin="0,0,0,6"/>
+            <TextBlock Text="When disabled, subtitles are saved untranslated with the detected language suffix (e.g. video.EN.srt) and no LLM is contacted."
+                       TextWrapping="Wrap" Foreground="{DynamicResource SystemControlPageTextBaseHighBrush}"/>
+
+            <RadioButton GroupName="Translation"
+                         IsChecked="{Binding TranslationEnabled}"
+                         Margin="{StaticResource FieldMargin}">
+                Enabled — translate subtitles with the LLM
+            </RadioButton>
+            <RadioButton GroupName="Translation"
+                         IsChecked="{Binding TranslationDisabled}"
+                         Margin="{StaticResource FieldMargin}">
+                Disabled — keep untranslated subtitles
+            </RadioButton>
+
             <!-- Translation Mode -->
             <TextBlock Text="Translation Mode"
                        FontWeight="Bold" FontSize="16"
@@ -95,7 +115,7 @@
             <Border Height="1" Background="{DynamicResource SystemAccentColor}"
                     Margin="0,0,0,6"/>
             <TextBlock Text="Choose how subtitles are translated. Context mode sends batches with context; per-line mode translates each line independently."
-                       TextWrapping="Wrap" Foreground="{DynamicResource SystemAltMediumColor}"/>
+                       TextWrapping="Wrap" Foreground="{DynamicResource SystemControlPageTextBaseHighBrush}"/>
 
             <RadioButton GroupName="TranslationMode"
                          IsChecked="{Binding UseContextTranslation}"
@@ -115,7 +135,7 @@
             <Border Height="1" Background="{DynamicResource SystemAccentColor}"
                     Margin="0,0,0,6"/>
             <TextBlock Text="VAD filters out silence before transcription. Disabled processes the full audio."
-                       TextWrapping="Wrap" Foreground="{DynamicResource SystemAltMediumColor}"/>
+                       TextWrapping="Wrap" Foreground="{DynamicResource SystemControlPageTextBaseHighBrush}"/>
 
             <RadioButton GroupName="VAD"
                          IsChecked="{Binding VadEnabled}"
@@ -135,7 +155,7 @@
             <Border Height="1" Background="{DynamicResource SystemAccentColor}"
                     Margin="0,0,0,6"/>
             <TextBlock Text="DpdfNet is an AI-based speech denoiser that enhances voice clarity before transcription."
-                       TextWrapping="Wrap" Foreground="{DynamicResource SystemAltMediumColor}"/>
+                       TextWrapping="Wrap" Foreground="{DynamicResource SystemControlPageTextBaseHighBrush}"/>
 
             <RadioButton GroupName="DpdfNet"
                          IsChecked="{Binding DpdfNetEnabled}"
