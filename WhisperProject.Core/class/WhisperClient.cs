@@ -44,6 +44,7 @@ public static class WhisperClient
         if (!File.Exists(modelFileName))
         {
             Console.WriteLine($"Downloading Model {modelFileName}");
+            // may be problematic because of openvino... etc
             await ModelDownloader.DownloadAsync(WhisperModelUrl, modelFileName, progress);
         }
 
