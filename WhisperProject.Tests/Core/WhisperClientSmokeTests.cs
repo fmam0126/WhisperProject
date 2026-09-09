@@ -28,11 +28,16 @@ public class WhisperClientSmokeTests
     private const long ModelMinBytes = 100L * 1024 * 1024;
 
     private const string KennedyWavName = "kennedy.wav";
-
+    private const string JunkWavName = "JunkNoise16khz.wav";
     // Guard so the two tests (which xUnit runs sequentially within this class)
     // and repeated runs all reuse a single download.
     private static readonly SemaphoreSlim ModelLock = new(1, 1);
     private static string? _cachedModelPath;
+    /// <summary>
+    /// Full path to the committed junk test clip in the output directory.
+    /// </summary>
+    private static string SourceJunkWav =>
+        Path.Combine(AppContext.BaseDirectory, "TestData", JunkWavName);
 
     /// <summary>Full path to the committed test clip in the output directory.</summary>
     private static string SourceKennedyWav =>
@@ -80,6 +85,19 @@ public class WhisperClientSmokeTests
         // Kennedy's "We choose to go to the Moon" speech.
         Assert.Contains("moon", transcript, StringComparison.OrdinalIgnoreCase);
     }
+    [Fact]
+    public async Task TranscribeVadAsyncJunkDataDoesntProduceSrt()
+    {
+        using var dir = new TempDir();
+        var wav = CopyJunkClipInto(dir);
+        var model = await EnsureModelAsync();
+
+        // ggml-base.en is an English-only model, so the language is pinned to "en".
+        var language = await WhisperClient.TranscribeVadAsync(wav, modelPath: model, language: "en");
+
+        var srt = Path.ChangeExtension(wav, ".srt");
+        Assert.False(File.Exists(srt), $"Expected WhisperClient to NOT write an SRT file at {srt}.");
+    }
 
     private static string CopyClipInto(TempDir dir)
     {
@@ -91,6 +109,17 @@ public class WhisperClientSmokeTests
         File.Copy(SourceKennedyWav, wav);
         return wav;
     }
+    private static string CopyJunkClipInto(TempDir dir)
+    {
+        Assert.True(File.Exists(SourceJunkWav),
+            $"Test fixture missing: {SourceJunkWav}. Ensure JunkNoise16khz.wav exists in " +
+            "WhisperProject.Tests/TestData (it is copied to the output on build).");
+
+        var wav = Path.Combine(dir.Path, JunkWavName);
+        File.Copy(SourceJunkWav, wav);
+        return wav;
+    }
+
 
     /// <summary>
     /// Returns the path of a Whisper GGML model, downloading <c>ggml-base.en</c>
